@@ -129,9 +129,6 @@ contract Event is ERC721 {
         ticketToBuy.isListed = false;
     }
 
-    function afterEvent() 
-        public 
-        onlyTokenOwner
     function createTicketInBulk(
         string memory _seat,
         string memory _type,
