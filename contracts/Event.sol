@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "./MarketPlace.sol";
 
 contract Event is ERC721 {
     string eventName;
@@ -80,6 +81,7 @@ contract Event is ERC721 {
         string _seat;
         string _type;
         uint256 creationPrice;
+        uint256 listingPrice;
         bool isListed;
         bool isCheckedIn;
         bool isValid;
@@ -105,6 +107,9 @@ contract Event is ERC721 {
         commissionFee = _commissionFee;
         eventDate = _eventDate;
         currentStage = eventStage.PRESALES;
+        MarketPlace(0x4a889BF8Cd9d6118f4e38591FF6D9D3F32Ad611c).addEvent(
+            _eventName
+        );
     }
 
     function createTicket(
@@ -122,6 +127,7 @@ contract Event is ERC721 {
             _seat,
             _type,
             _creationPrice,
+            _creationPrice, // initial listing price is the creation price
             true,
             false,
             true
@@ -136,14 +142,11 @@ contract Event is ERC721 {
     function buyTicketsDuringPostEvent(uint256 tokenId)
         public
         payable
-        requireValidTicket(tokenId) 
+        requireValidTicket(tokenId)
         requiredEventStage(eventStage.POSTEVENT)
     {
         Ticket memory ticketToBuy = IDToTicket[tokenId];
-        require(
-            ticketToBuy.isListed == true, 
-            "Cannot buy, Ticket not lised"
-        );
+        require(ticketToBuy.isListed == true, "Cannot buy, Ticket not lised");
         // ticket count does not matter any more after the event
         safeTransferFrom(ticketToBuy._ticketOwner, msg.sender, tokenId);
         ticketToBuy._ticketOwner = msg.sender;
@@ -169,16 +172,13 @@ contract Event is ERC721 {
         requireValidTicket(tokenId)
         addressCanPurchaseMore(msg.sender)
     {
-        uint256 payableAmount = IDToTicket[tokenId].creationPrice;
+        uint256 payableAmount = IDToTicket[tokenId].listingPrice;
         require(
             msg.value >= payableAmount,
             "Insufficient funds to purchase ticket"
         );
 
-        require(
-            IDToTicket[tokenId].isListed == true,
-            "Ticket not listed"
-        );
+        require(IDToTicket[tokenId].isListed == true, "Ticket not listed");
 
         // ticket was resold
         if (IDToTicket[tokenId]._ticketOwner != address(0)) {
@@ -191,30 +191,40 @@ contract Event is ERC721 {
         IDToTicket[tokenId].isListed = false;
     }
 
-    // only need to list ticket during sales period 
+    // only need to list ticket during sales period
     // after sales become post sales the ticket can be sold as an NFT
-    function listTicket(uint256 tokenId)
+    function listTicket(uint256 tokenId, uint256 _newListingPrice)
         public
         requireValidTicket(tokenId)
         onlyTicketOwner(tokenId)
         requiredEventStage(eventStage.SALES)
     {
         require(
-            IDToTicket[tokenId].isListed == false, 
+            IDToTicket[tokenId].isListed == false,
             "Ticket is currently listed"
+        );
+
+        require(
+            _newListingPrice <= resaleCeiling,
+            string(
+                abi.encodePacked(
+                    "Resale price cannot be greater than ",
+                    resaleCeiling
+                )
+            )
         );
 
         IDToTicket[tokenId].isListed = true;
     }
 
     function unlistTicket(uint256 tokenId)
-        public 
+        public
         requireValidTicket(tokenId)
         onlyTicketOwner(tokenId)
         requiredEventStage(eventStage.SALES)
     {
         require(
-            IDToTicket[tokenId].isListed == true, 
+            IDToTicket[tokenId].isListed == true,
             "Ticket is currently unlisted"
         );
         IDToTicket[tokenId].isListed = false;
@@ -271,18 +281,18 @@ contract Event is ERC721 {
     // state changing functions
 
     // presalse --> sales
-    function changeStateToSales() 
-        public 
-        onlyEventOrganizer 
+    function changeStateToSales()
+        public
+        onlyEventOrganizer
         requiredEventStage(eventStage.PRESALES)
     {
         currentStage = eventStage.SALES;
     }
-    
+
     // sales --> during event
-    function changeStateToDuring() 
-        public 
-        onlyEventOrganizer 
+    function changeStateToDuring()
+        public
+        onlyEventOrganizer
         requiredEventStage(eventStage.SALES)
     {
         currentStage = eventStage.DURINGEVENT;
@@ -290,13 +300,12 @@ contract Event is ERC721 {
 
     // during event --> post event
     // called by the token owner
-    function changeStateToPostEvent(uint256 tokenId) 
-        public 
+    function changeStateToPostEvent(uint256 tokenId)
+        public
         onlyTicketOwner(tokenId)
         requireValidTicket(tokenId)
         requiredEventStage(eventStage.DURINGEVENT)
     {
         currentStage = eventStage.POSTEVENT;
     }
-
 }
