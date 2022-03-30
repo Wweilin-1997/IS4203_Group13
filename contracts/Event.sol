@@ -300,10 +300,9 @@ contract Event is ERC721 {
 
     // during event --> post event
     // called by the token owner
-    function changeStateToPostEvent(uint256 tokenId)
+    function changeStateToPostEvent()
         public
-        onlyTicketOwner(tokenId)
-        requireValidTicket(tokenId)
+        onlyEventOrganizer 
         requiredEventStage(eventStage.DURINGEVENT)
     {
         currentStage = eventStage.POSTEVENT;
