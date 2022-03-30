@@ -191,14 +191,33 @@ contract Event is ERC721 {
         IDToTicket[tokenId].isListed = false;
     }
 
+    // only need to list ticket during sales period 
+    // after sales become post sales the ticket can be sold as an NFT
     function listTicket(uint256 tokenId)
         public
         requireValidTicket(tokenId)
         onlyTicketOwner(tokenId)
         requiredEventStage(eventStage.SALES)
     {
-        // require()
+        require(
+            IDToTicket[tokenId].isListed == false, 
+            "Ticket is currently listed"
+        );
+
         IDToTicket[tokenId].isListed = true;
+    }
+
+    function unlistTicket(uint256 tokenId)
+        public 
+        requireValidTicket(tokenId)
+        onlyTicketOwner(tokenId)
+        requiredEventStage(eventStage.SALES)
+    {
+        require(
+            IDToTicket[tokenId].isListed == true, 
+            "Ticket is currently unlisted"
+        );
+        IDToTicket[tokenId].isListed = false;
     }
 
     //////////////////////////////////////////////////////////
