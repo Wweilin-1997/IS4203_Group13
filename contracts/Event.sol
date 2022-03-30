@@ -177,17 +177,24 @@ contract Event is ERC721 {
             msg.value >= payableAmount,
             "Insufficient funds to purchase ticket"
         );
-
         require(IDToTicket[tokenId].isListed == true, "Ticket not listed");
 
+        uint256 amountPaid = msg.value;
         // ticket was resold
         if (IDToTicket[tokenId]._ticketOwner != address(0)) {
             ticketCountPerOwner[IDToTicket[tokenId]._ticketOwner]--;
+            address payable reseller = payable(
+                address(uint160(IDToTicket[tokenId]._ticketOwner))
+            );
+            uint256 resaleValAfterCommission = amountPaid - commissionFee;
+            reseller.transfer(resaleValAfterCommission);
         }
-        ticketCountPerOwner[msg.sender]++;
+
+        // tx.origin is used since the original buyer calls this function via market place contract
+        ticketCountPerOwner[tx.origin]++;
 
         // can implement returning of balance if we want.
-        IDToTicket[tokenId]._ticketOwner = msg.sender;
+        IDToTicket[tokenId]._ticketOwner = tx.origin;
         IDToTicket[tokenId].isListed = false;
     }
 
@@ -205,7 +212,7 @@ contract Event is ERC721 {
         );
 
         require(
-            _newListingPrice <= resaleCeiling,
+            _newListingPrice <= resaleCeiling + commissionFee,
             string(
                 abi.encodePacked(
                     "Resale price cannot be greater than ",
