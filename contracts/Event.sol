@@ -133,6 +133,18 @@ contract Event is ERC721 {
         return newTicketId;
     }
 
+    function buyTicketsDuringPostEvent(uint256 tokenId)
+        public
+        payable
+        requiredEventStage(eventStage.POSTEVENT)
+    {
+        Ticket memory ticketToBuy = IDToTicket[tokenId];
+        require(ticketToBuy.isListed == true, "Cannot buy, Ticket not lised");
+        safeTransferFrom(ticketToBuy._ticketOwner, msg.sender, tokenId);
+        ticketToBuy._ticketOwner = msg.sender;
+        ticketToBuy.isListed = false;
+    }
+
     function createTicketInBulk(
         string memory _seat,
         string memory _type,
