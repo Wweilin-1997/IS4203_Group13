@@ -12,12 +12,13 @@ contract Event is ERC721 {
     uint256 commissionFee;
     uint256 eventDate;
     // mapping(uint256 => uint256) listPrice;
-    address marketplace; // hardcoded address of the market place
+    address marketPlaceAddress; // hardcoded address of the market place
     string ticketImageUrl;
     mapping(uint256 => Ticket) IDToTicket;
     // mapping(ticketId => mapping(uint256 => address)) transactions;
     mapping(address => uint256) ticketCountPerOwner;
     eventStage currentStage;
+    mapping(string => uint256[]) typeToTicketIds;
 
     enum eventStage {
         PRESALES,
@@ -33,10 +34,10 @@ contract Event is ERC721 {
         _;
     }
 
-    modifier onlyTokenOwner(uint256 tokenId) {
-        address tokenOwner = ownerOf(tokenId);
+    modifier onlyTicketOwner(uint256 tokenId) {
+        require(_exists(tokenId), "Please enter a valid ticket id");
         require(
-            tokenOwner == msg.sender,
+            IDToTicket[tokenId]._ticketOwner == msg.sender,
             "You're not authorized to perform this action"
         );
         _;
@@ -47,6 +48,19 @@ contract Event is ERC721 {
             msg.sender == eventOrganizer,
             "Only the event organizer can perform this action"
         );
+        _;
+    }
+
+    modifier onlyMarketPlace() {
+        require(
+            msg.sender == marketPlaceAddress,
+            "You're not authorized to perform this action"
+        );
+        _;
+    }
+
+    modifier requireValidTicket(uint256 tokenId) {
+        require(_exists(tokenId), "Please enter a valid ticket id");
         _;
     }
 
@@ -97,14 +111,46 @@ contract Event is ERC721 {
             true
         );
         uint256 newTicketId = numTickets++;
-        _safeMint(marketplace, newTicketId);
+        _safeMint(marketPlaceAddress, newTicketId);
         IDToTicket[newTicketId] = newTicket;
+        typeToTicketIds[_type].push(newTicketId);
         return newTicketId;
     }
 
-    function buyTickets(uint256 tokenId)
+    function createTicketInBulk(
+        string memory _seat,
+        string memory _type,
+        uint256 _creationPrice,
+        uint256 _numOfTickets
+    ) public onlyEventOrganizer requiredEventStage(eventStage.PRESALES) {
+        for (uint256 i = 0; i < _numOfTickets; i++) {
+            createTicket(_seat, _type, _creationPrice);
+        }
+    }
+
+    function buyTicketsDuringSales(uint256 tokenId)
         public
         payable
-        requiredEventStage(eventStage.POSTEVENT)
-    {}
+        onlyMarketPlace
+        requiredEventStage(eventStage.SALES)
+        requireValidTicket(tokenId)
+    {
+        uint256 payableAmount = IDToTicket[tokenId].creationPrice;
+        require(
+            msg.value >= payableAmount,
+            "Insufficient funds to purchase ticket"
+        );
+
+        // can implement returning of balance if we want.
+        IDToTicket[tokenId]._ticketOwner = msg.sender;
+        IDToTicket[tokenId].isListed = false;
+    }
+
+    function resellTicket(uint256 tokenId)
+        public
+        requireValidTicket(tokenId)
+        onlyTicketOwner(tokenId)
+    {
+        IDToTicket[tokenId].isListed = true;
+    }
 }
