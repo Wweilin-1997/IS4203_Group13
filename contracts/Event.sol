@@ -136,10 +136,15 @@ contract Event is ERC721 {
     function buyTicketsDuringPostEvent(uint256 tokenId)
         public
         payable
+        requireValidTicket(tokenId) 
         requiredEventStage(eventStage.POSTEVENT)
     {
         Ticket memory ticketToBuy = IDToTicket[tokenId];
-        require(ticketToBuy.isListed == true, "Cannot buy, Ticket not lised");
+        require(
+            ticketToBuy.isListed == true, 
+            "Cannot buy, Ticket not lised"
+        );
+        // ticket count does not matter any more after the event
         safeTransferFrom(ticketToBuy._ticketOwner, msg.sender, tokenId);
         ticketToBuy._ticketOwner = msg.sender;
         ticketToBuy.isListed = false;
@@ -168,6 +173,11 @@ contract Event is ERC721 {
         require(
             msg.value >= payableAmount,
             "Insufficient funds to purchase ticket"
+        );
+
+        require(
+            IDToTicket[tokenId].isListed == true,
+            "Ticket not listed"
         );
 
         // ticket was resold
@@ -237,4 +247,37 @@ contract Event is ERC721 {
 
         IDToTicket[tokenId].isValid = true;
     }
+
+    //////////////////////////////////////////////////////
+    // state changing functions
+
+    // presalse --> sales
+    function changeStateToSales() 
+        public 
+        onlyEventOrganizer 
+        requiredEventStage(eventStage.PRESALES)
+    {
+        currentStage = eventStage.SALES;
+    }
+    
+    // sales --> during event
+    function changeStateToDuring() 
+        public 
+        onlyEventOrganizer 
+        requiredEventStage(eventStage.SALES)
+    {
+        currentStage = eventStage.DURINGEVENT;
+    }
+
+    // during event --> post event
+    // called by the token owner
+    function changeStateToPostEvent(uint256 tokenId) 
+        public 
+        onlyTicketOwner(tokenId)
+        requireValidTicket(tokenId)
+        requiredEventStage(eventStage.DURINGEVENT)
+    {
+        currentStage = eventStage.POSTEVENT;
+    }
+
 }
