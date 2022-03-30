@@ -9,6 +9,7 @@ contract Event is ERC721 {
     string company;
     uint256 numTickets = 0;
     uint256 resaleCeiling;
+    uint256 maxTicketsPerAddress;
     uint256 commissionFee;
     uint256 eventDate;
     // mapping(uint256 => uint256) listPrice;
@@ -23,6 +24,7 @@ contract Event is ERC721 {
     enum eventStage {
         PRESALES,
         SALES,
+        DURINGEVENT,
         POSTEVENT
     }
 
@@ -64,6 +66,14 @@ contract Event is ERC721 {
         _;
     }
 
+    modifier addressCanPurchaseMore(address buyer) {
+        require(
+            ticketCountPerOwner[buyer] < maxTicketsPerAddress,
+            "Buyer already reached the max limit"
+        );
+        _;
+    }
+
     struct Ticket {
         // address _marketPlaceAddress;
         address _ticketOwner;
@@ -71,6 +81,8 @@ contract Event is ERC721 {
         string _type;
         uint256 creationPrice;
         bool isListed;
+        bool isCheckedIn;
+        bool isValid;
     }
 
     constructor(
@@ -79,6 +91,7 @@ contract Event is ERC721 {
         string memory _location,
         string memory _company,
         uint256 _resaleCeiling,
+        uint256 _maxTicketsPerAddress,
         uint256 _commissionFee,
         uint256 _eventDate
     ) ERC721(_eventName, _symbol) {
@@ -88,6 +101,7 @@ contract Event is ERC721 {
         company = _company;
         numTickets = 0;
         resaleCeiling = _resaleCeiling;
+        maxTicketsPerAddress = _maxTicketsPerAddress;
         commissionFee = _commissionFee;
         eventDate = _eventDate;
         currentStage = eventStage.PRESALES;
@@ -108,6 +122,8 @@ contract Event is ERC721 {
             _seat,
             _type,
             _creationPrice,
+            true,
+            false,
             true
         );
         uint256 newTicketId = numTickets++;
@@ -134,6 +150,7 @@ contract Event is ERC721 {
         onlyMarketPlace
         requiredEventStage(eventStage.SALES)
         requireValidTicket(tokenId)
+        addressCanPurchaseMore(msg.sender)
     {
         uint256 payableAmount = IDToTicket[tokenId].creationPrice;
         require(
@@ -141,16 +158,71 @@ contract Event is ERC721 {
             "Insufficient funds to purchase ticket"
         );
 
+        // ticket was resold
+        if (IDToTicket[tokenId]._ticketOwner != address(0)) {
+            ticketCountPerOwner[IDToTicket[tokenId]._ticketOwner]--;
+        }
+        ticketCountPerOwner[msg.sender]++;
+
         // can implement returning of balance if we want.
         IDToTicket[tokenId]._ticketOwner = msg.sender;
         IDToTicket[tokenId].isListed = false;
     }
 
-    function resellTicket(uint256 tokenId)
+    function listTicket(uint256 tokenId)
         public
         requireValidTicket(tokenId)
         onlyTicketOwner(tokenId)
+        requiredEventStage(eventStage.SALES)
     {
+        // require()
         IDToTicket[tokenId].isListed = true;
+    }
+
+    //////////////////////////////////////////////////////////
+    // Event Day Functions
+    function checkInTicket(uint256 tokenId)
+        public
+        onlyEventOrganizer
+        requireValidTicket(tokenId)
+        requiredEventStage(eventStage.SALES)
+    {
+        require(
+            IDToTicket[tokenId].isValid == true,
+            "The ticket has been invalidated"
+        );
+        require(
+            IDToTicket[tokenId].isCheckedIn == false,
+            "Ticket is already checked in"
+        );
+        IDToTicket[tokenId].isCheckedIn = true;
+    }
+
+    //////////////////////////////////////////////////////////
+    // Administration Functions
+    function invalidateTicket(uint256 tokenId)
+        public
+        onlyEventOrganizer
+        requireValidTicket(tokenId)
+    {
+        require(
+            IDToTicket[tokenId].isValid == true,
+            "The ticket has already been invalidated"
+        );
+
+        IDToTicket[tokenId].isValid = false;
+    }
+
+    function validateTicket(uint256 tokenId)
+        public
+        onlyEventOrganizer
+        requireValidTicket(tokenId)
+    {
+        require(
+            IDToTicket[tokenId].isValid == false,
+            "The ticket is already valid"
+        );
+
+        IDToTicket[tokenId].isValid = true;
     }
 }
