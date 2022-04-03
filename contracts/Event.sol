@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./MarketPlace.sol";
 
-contract Event is ERC721 {
+contract Event is ERC721, Ownable {
+
+
+    uint256 eventId;
     string eventName;
     address eventOrganizer;
     string location;
@@ -14,7 +18,8 @@ contract Event is ERC721 {
     uint256 commissionFee;
     uint256 eventDate;
     // mapping(uint256 => uint256) listPrice;
-    address marketPlaceAddress; // hardcoded address of the market place
+    // address marketPlaceAddress;
+    MarketPlace marketPlace;
     string ticketImageUrl;
     mapping(uint256 => Ticket) IDToTicket;
     // mapping(ticketId => mapping(uint256 => address)) transactions;
@@ -54,13 +59,13 @@ contract Event is ERC721 {
         _;
     }
 
-    modifier onlyMarketPlace() {
-        require(
-            msg.sender == marketPlaceAddress,
-            "You're not authorized to perform this action"
-        );
-        _;
-    }
+    // modifier onlyMarketPlace() {
+    //     require(
+    //         msg.sender == marketPlaceAddress,
+    //         "You're not authorized to perform this action"
+    //     );
+    //     _;
+    // }
 
     modifier requireValidTicket(uint256 tokenId) {
         require(_exists(tokenId), "Please enter a valid ticket id");
@@ -88,6 +93,7 @@ contract Event is ERC721 {
     }
 
     constructor(
+        uint256 _eventId,
         string memory _eventName,
         string memory _symbol,
         string memory _location,
@@ -95,8 +101,10 @@ contract Event is ERC721 {
         uint256 _resaleCeiling,
         uint256 _maxTicketsPerAddress,
         uint256 _commissionFee,
-        uint256 _eventDate
+        uint256 _eventDate,
+        MarketPlace _marketPlace
     ) ERC721(_eventName, _symbol) {
+        eventId = _eventId;
         eventName = _eventName;
         eventOrganizer = msg.sender;
         location = _location;
@@ -107,9 +115,7 @@ contract Event is ERC721 {
         commissionFee = _commissionFee;
         eventDate = _eventDate;
         currentStage = eventStage.PRESALES;
-        // MarketPlace(0x4a889BF8Cd9d6118f4e38591FF6D9D3F32Ad611c).addEvent(
-        //     _eventName
-        // );
+        marketPlace = _marketPlace;
     }
 
     function createTicket(
@@ -133,7 +139,7 @@ contract Event is ERC721 {
             true
         );
         uint256 newTicketId = numTickets++;
-        _safeMint(marketPlaceAddress, newTicketId);
+        _safeMint(marketPlace.getMarketPlaceAddress(), newTicketId);
         IDToTicket[newTicketId] = newTicket;
         typeToTicketIds[_type].push(newTicketId);
         return newTicketId;
@@ -167,7 +173,7 @@ contract Event is ERC721 {
     function buyTicketsDuringSales(uint256 tokenId)
         public
         payable
-        onlyMarketPlace
+        onlyOwner
         requiredEventStage(eventStage.SALES)
         requireValidTicket(tokenId)
         addressCanPurchaseMore(msg.sender)
@@ -309,9 +315,53 @@ contract Event is ERC721 {
     // called by the token owner
     function changeStateToPostEvent()
         public
-        onlyEventOrganizer 
+        onlyEventOrganizer
         requiredEventStage(eventStage.DURINGEVENT)
     {
         currentStage = eventStage.POSTEVENT;
+    }
+
+    ////////////////////////////////////////////////////////////
+    //getters
+
+    function getEventId() public view returns(uint256) {
+        return eventId;
+    }
+
+    function getEventName() public view returns (string memory) {
+        return eventName;
+    }
+
+    function getEventOrganizer() public view returns (address) {
+        return eventOrganizer;
+    }
+
+    function getCompany() public view returns (string memory) {
+        return company;
+    }
+
+    function getResaleCeiling() public view returns (uint256) {
+        return resaleCeiling;
+    }
+
+    function getEventDate() public view returns (uint256) {
+        return eventDate;
+    }
+
+    function getTicket(uint256 id)
+        public
+        view
+        requireValidTicket(id)
+        returns (Ticket memory)
+    {
+        return IDToTicket[id];
+    }
+
+    function getCurrentTicketCount() public view returns (uint256) {
+        return ticketCountPerOwner[msg.sender];
+    }
+
+    function getMarketPlaceInstance() public view returns (MarketPlace) {
+        return marketPlace;
     }
 }

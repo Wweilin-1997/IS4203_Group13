@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import "./Event.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract MarketPlace {
-    //uint256 commissonFee;
+contract MarketPlace is ReentrancyGuard {
+    uint256 commissonFee;
     //Event eventContract;
-    mapping(string => Event) events;
+    mapping(uint256 => Event) events;
     mapping(string => mapping(uint256 => uint256)) prices;
     address _owner = msg.sender;
+    uint256 totalEvents = 0;
 
     /*
   constructor(uint256 _commissonFee, Event _eventContract) {
@@ -17,14 +19,21 @@ contract MarketPlace {
   */
 
     //mapping method
-    constructor() {}
+    constructor(uint256 _commissonFee) {
+        commissonFee = _commissonFee;
+    }
 
-    function addEvent(string memory _eventName) public {
+    modifier validEvent(uint256 eventId) {
+        require(eventId < totalEvents);
+        _;
+    }
+
+    function addEvent(Event _event) public {
         require(
-            address(events[_eventName]) == address(0),
+            address(events[_event.getEventId()]) == address(0),
             "There is an existing event with the same name"
         );
-        events[_eventName] = Event(msg.sender);
+        events[_event.getEventId()] = _event;
     }
 
     // // list and unlist functions
@@ -66,9 +75,51 @@ contract MarketPlace {
     //     return prices[eventName][tokenId];
     // }
 
-    function buy(string memory eventName, uint256 tokenId) public {
+    function buy(uint256 eventId, uint256 tokenId) public nonReentrant {
         // same require event exists
-        Event listedEvent = events[eventName];
+        Event listedEvent = events[eventId];
         listedEvent.buyTicketsDuringSales(tokenId);
+    }
+
+    function createEvent(
+        string memory _eventName,
+        string memory _symbol,
+        string memory _location,
+        string memory _company,
+        uint256 _resaleCeiling,
+        uint256 _maxTicketsPerAddress,
+        uint256 _commissionFee,
+        uint256 _eventDate
+    ) public {
+        totalEvents++;
+        Event eventInstance = new Event(
+            totalEvents,
+            _eventName,
+            _symbol,
+            _location,
+            _company,
+            _resaleCeiling,
+            _maxTicketsPerAddress,
+            _commissionFee,
+            _eventDate,
+            this
+        );
+
+        addEvent(eventInstance);
+    }
+
+    ///////////////////////////////////////////////////////
+    //getters
+    function getMarketPlaceAddress() public view returns (address) {
+        return address(this);
+    }
+
+    function getEvent(uint256 eventId)
+        public
+        view
+        validEvent(eventId)
+        returns (Event)
+    {
+        return events[eventId];
     }
 }
