@@ -107,9 +107,9 @@ contract Event is ERC721 {
         commissionFee = _commissionFee;
         eventDate = _eventDate;
         currentStage = eventStage.PRESALES;
-        MarketPlace(0x4a889BF8Cd9d6118f4e38591FF6D9D3F32Ad611c).addEvent(
-            _eventName
-        );
+        // MarketPlace(0x4a889BF8Cd9d6118f4e38591FF6D9D3F32Ad611c).addEvent(
+        //     _eventName
+        // );
     }
 
     function createTicket(

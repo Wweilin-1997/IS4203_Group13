@@ -1,7 +1,6 @@
 const _deploy_contracts = require("../migrations/2_deploy_contracts");
 const truffleAssert = require('truffle-assertions');
 var assert = require('assert');
-const { it } = require("ethers/wordlists");
 
 var Event = artifacts.require("../contracts/Event.sol");
 var MarketPlace = artifacts.require("../contracts/MarketPlace.sol");
@@ -19,15 +18,11 @@ contract('Event', function(accounts){
 
     })
     
-    it('Create Ticket Type', async () => {
-    
-    })
-    
     it('Create Tickets in Bulk for a particular Type', async () => {
     
     })
     
-    it('Purchase tickets during initial sales', async () =>{
+    it('Transferring tickets from one user to another', async () =>{
 
     })
 
@@ -42,6 +37,15 @@ contract('Event', function(accounts){
     it('Check in ticket', async () => {
         
     })
+
+    it('Tickets that are checked in cannot be checked in again', async () =>{
+
+    })
+
+    it('Invalidated tickets cannot be checked in', async () =>{
+
+    })
+
 
 });
 
