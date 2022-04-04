@@ -32,6 +32,14 @@ contract Event is ERC721, Ownable {
         POSTEVENT
     }
 
+    event ticketCreated(uint256 ticketId);
+    event ticketBought(uint256 ticketId);
+    event ticketListed(uint256 ticketId);
+    event ticketUnlisted(uint256 ticketId);
+    event ticketCheckedIn(uint256 ticketId);
+    event ticketInvalidated(uint256 ticketId);
+    event ticketValidated(uint256 ticketId);
+
     modifier requiredEventStage(eventStage stage) {
         require(
             stage == currentStage,
@@ -140,6 +148,7 @@ contract Event is ERC721, Ownable {
         _safeMint(marketPlace.getMarketPlaceAddress(), newTicketId);
         IDToTicket[newTicketId] = newTicket;
         typeToTicketIds[_type].push(newTicketId);
+        emit ticketCreated(newTicketId);
         return newTicketId;
     }
 
@@ -155,6 +164,9 @@ contract Event is ERC721, Ownable {
         safeTransferFrom(ticketToBuy._ticketOwner, msg.sender, tokenId);
         ticketToBuy._ticketOwner = msg.sender;
         ticketToBuy.isListed = false;
+
+        // is tokenId == ticketId?
+        emit ticketBought(tokenId);
     }
 
     function createTicketInBulk(
@@ -200,6 +212,7 @@ contract Event is ERC721, Ownable {
         // can implement returning of balance if we want.
         IDToTicket[tokenId]._ticketOwner = tx.origin;
         IDToTicket[tokenId].isListed = false;
+        emit ticketBought(tokenId);
     }
 
     // only need to list ticket during sales period
@@ -226,6 +239,7 @@ contract Event is ERC721, Ownable {
         );
 
         IDToTicket[tokenId].isListed = true;
+        emit ticketListed(tokenId);
     }
 
     function unlistTicket(uint256 tokenId)
@@ -239,6 +253,7 @@ contract Event is ERC721, Ownable {
             "Ticket is currently unlisted"
         );
         IDToTicket[tokenId].isListed = false;
+        emit ticketUnlisted(tokenId);
     }
 
     //////////////////////////////////////////////////////////
@@ -258,6 +273,7 @@ contract Event is ERC721, Ownable {
             "Ticket is already checked in"
         );
         IDToTicket[tokenId].isCheckedIn = true;
+        emit ticketCheckedIn(tokenId);
     }
 
     //////////////////////////////////////////////////////////
@@ -273,6 +289,7 @@ contract Event is ERC721, Ownable {
         );
 
         IDToTicket[tokenId].isValid = false;
+        emit ticketInvalidated(tokenId);
     }
 
     function validateTicket(uint256 tokenId)
@@ -286,6 +303,8 @@ contract Event is ERC721, Ownable {
         );
 
         IDToTicket[tokenId].isValid = true;
+
+        emit ticketValidated(tokenId);
     }
 
     //////////////////////////////////////////////////////

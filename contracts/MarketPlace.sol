@@ -28,12 +28,16 @@ contract MarketPlace is ReentrancyGuard {
         _;
     }
 
+    event eventAdded(uint256 eventId, string eventName);
+    event buyTicket(uint256 eventId, uint256 ticketId);
+
     function addEvent(Event _event) public {
         require(
             address(events[_event.getEventId()]) == address(0),
             "There is an existing event with the same name"
         );
         events[_event.getEventId()] = address(_event);
+        emit eventAdded(_event.getEventId(), _event.getEventName());
     }
 
     // // list and unlist functions
@@ -79,6 +83,7 @@ contract MarketPlace is ReentrancyGuard {
         // same require event exists
         Event listedEvent = Event(events[eventId]);
         listedEvent.buyTicketsDuringSales(tokenId);
+        emit buyTicket(eventId, tokenId);
     }
 
     function createEvent(
