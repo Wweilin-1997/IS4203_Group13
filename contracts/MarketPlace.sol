@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 contract MarketPlace is ReentrancyGuard {
     uint256 commissonFee;
     //Event eventContract;
-    mapping(uint256 => Event) events;
+    mapping(uint256 => address) events;
     mapping(string => mapping(uint256 => uint256)) prices;
     address _owner = msg.sender;
     uint256 totalEvents = 0;
@@ -24,7 +24,7 @@ contract MarketPlace is ReentrancyGuard {
     }
 
     modifier validEvent(uint256 eventId) {
-        require(eventId < totalEvents);
+        require(eventId <= totalEvents);
         _;
     }
 
@@ -33,7 +33,7 @@ contract MarketPlace is ReentrancyGuard {
             address(events[_event.getEventId()]) == address(0),
             "There is an existing event with the same name"
         );
-        events[_event.getEventId()] = _event;
+        events[_event.getEventId()] = address(_event);
     }
 
     // // list and unlist functions
@@ -77,7 +77,7 @@ contract MarketPlace is ReentrancyGuard {
 
     function buy(uint256 eventId, uint256 tokenId) public nonReentrant {
         // same require event exists
-        Event listedEvent = events[eventId];
+        Event listedEvent = Event(events[eventId]);
         listedEvent.buyTicketsDuringSales(tokenId);
     }
 
@@ -118,8 +118,12 @@ contract MarketPlace is ReentrancyGuard {
         public
         view
         validEvent(eventId)
-        returns (Event)
+        returns (address)
     {
         return events[eventId];
+    }
+
+    function getTotalEvents() public view returns (uint256) {
+        return totalEvents;
     }
 }

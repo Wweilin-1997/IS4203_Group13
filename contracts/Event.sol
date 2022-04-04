@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./MarketPlace.sol";
 
 contract Event is ERC721, Ownable {
-
-
     uint256 eventId;
     string eventName;
     address eventOrganizer;
@@ -324,7 +322,7 @@ contract Event is ERC721, Ownable {
     ////////////////////////////////////////////////////////////
     //getters
 
-    function getEventId() public view returns(uint256) {
+    function getEventId() public view returns (uint256) {
         return eventId;
     }
 
