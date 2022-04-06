@@ -4,26 +4,11 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./MarketPlace.sol";
 
-contract Event is ERC721, Ownable {
-    uint256 eventId;
-    string eventName;
-    address eventOrganizer;
-    string location;
-    string company;
-    uint256 numTickets = 0;
-    uint256 resaleCeiling;
-    uint256 maxTicketsPerAddress;
-    uint256 commissionFee;
-    uint256 eventDate;
-    // mapping(uint256 => uint256) listPrice;
-    // address marketPlaceAddress;
-    MarketPlace marketPlace;
-    string ticketImageUrl;
-    mapping(uint256 => Ticket) IDToTicket;
-    // mapping(ticketId => mapping(uint256 => address)) transactions;
-    mapping(address => uint256) ticketCountPerOwner;
+contract Event is Ownable {
+    MarketPlace marketplaceContract;
     eventStage currentStage;
-    mapping(string => uint256[]) typeToTicketIds;
+    uint256 public numEvents = 0;
+    mapping(uint256 => ticketEvent) public ticketEvents;
 
     enum eventStage {
         PRESALES,
@@ -33,12 +18,7 @@ contract Event is ERC721, Ownable {
     }
 
     event ticketCreated(uint256 ticketId);
-    event ticketBought(uint256 ticketId);
-    event ticketListed(uint256 ticketId);
     event ticketUnlisted(uint256 ticketId);
-    event ticketCheckedIn(uint256 ticketId);
-    event ticketInvalidated(uint256 ticketId);
-    event ticketValidated(uint256 ticketId);
 
     modifier requiredEventStage(eventStage stage) {
         require(
@@ -48,22 +28,22 @@ contract Event is ERC721, Ownable {
         _;
     }
 
-    modifier onlyTicketOwner(uint256 tokenId) {
-        require(_exists(tokenId), "Please enter a valid ticket id");
-        require(
-            IDToTicket[tokenId]._ticketOwner == msg.sender,
-            "You're not authorized to perform this action"
-        );
-        _;
-    }
+    // modifier onlyTicketOwner(uint256 tokenId) {
+    //     require(_exists(tokenId), "Please enter a valid ticket id");
+    //     require(
+    //         IDToTicket[tokenId]._ticketOwner == msg.sender,
+    //         "You're not authorized to perform this action"
+    //     );
+    //     _;
+    // }
 
-    modifier onlyEventOrganizer() {
-        require(
-            msg.sender == eventOrganizer,
-            "Only the event organizer can perform this action"
-        );
-        _;
-    }
+    // modifier onlyEventOrganizer() {
+    //     require(
+    //         msg.sender == eventOrganizer,
+    //         "Only the event organizer can perform this action"
+    //     );
+    //     _;
+    // }
 
     // modifier onlyMarketPlace() {
     //     require(
@@ -73,33 +53,38 @@ contract Event is ERC721, Ownable {
     //     _;
     // }
 
-    modifier requireValidTicket(uint256 tokenId) {
-        require(_exists(tokenId), "Please enter a valid ticket id");
-        _;
-    }
+    // modifier requireValidTicket(uint256 tokenId) {
+    //     require(_exists(tokenId), "Please enter a valid ticket id");
+    //     _;
+    // }
 
-    modifier addressCanPurchaseMore(address buyer) {
-        require(
-            ticketCountPerOwner[buyer] < maxTicketsPerAddress,
-            "Buyer already reached the max limit"
-        );
-        _;
-    }
+    // modifier addressCanPurchaseMore(address buyer) {
+    //     require(
+    //         ticketCountPerOwner[buyer] < maxTicketsPerAddress,
+    //         "Buyer already reached the max limit"
+    //     );
+    //     _;
+    // }
 
-    struct Ticket {
+    struct ticketEvent {
         // address _marketPlaceAddress;
-        address _ticketOwner;
-        string _seat;
-        string _type;
-        uint256 creationPrice;
-        uint256 listingPrice;
-        bool isListed;
-        bool isCheckedIn;
-        bool isValid;
+        string  _eventName;
+        string  _symbol;
+        string  _location;
+        string  _company;
+        uint256 _resaleCeiling;
+        uint256 _maxTicketsPerAddress;
+        uint256 _commissionFee;
+        uint256 _eventDate;
+        address _eventOrganizer;
+        eventStage stage;
     }
 
-    constructor(
-        uint256 _eventId,
+    constructor(MarketPlace marketplaceAddress)  {
+        marketplaceContract = marketplaceAddress;
+    }
+
+     function createEvent(
         string memory _eventName,
         string memory _symbol,
         string memory _location,
@@ -107,278 +92,232 @@ contract Event is ERC721, Ownable {
         uint256 _resaleCeiling,
         uint256 _maxTicketsPerAddress,
         uint256 _commissionFee,
-        uint256 _eventDate,
-        MarketPlace _marketPlace
-    ) ERC721(_eventName, _symbol) {
-        eventId = _eventId;
-        eventName = _eventName;
-        eventOrganizer = msg.sender;
-        location = _location;
-        company = _company;
-        numTickets = 0;
-        resaleCeiling = _resaleCeiling;
-        maxTicketsPerAddress = _maxTicketsPerAddress;
-        commissionFee = _commissionFee;
-        eventDate = _eventDate;
-        currentStage = eventStage.PRESALES;
-        marketPlace = _marketPlace;
-    }
-
-    function createTicket(
-        string memory _seat,
-        string memory _type,
-        uint256 _creationPrice
-    )
-        public
-        onlyEventOrganizer
-        requiredEventStage(eventStage.PRESALES)
-        returns (uint256)
-    {
-        Ticket memory newTicket = Ticket(
-            address(0),
-            _seat,
-            _type,
-            _creationPrice,
-            _creationPrice, // initial listing price is the creation price
-            true,
-            false,
-            true
+        uint256 _eventDate
+    ) public returns(uint256) {
+        ticketEvent memory eventInstance = ticketEvent(
+            _eventName,
+            _symbol,
+            _location,
+            _company,
+            _resaleCeiling,
+            _maxTicketsPerAddress,
+            _commissionFee,
+            _eventDate,
+            msg.sender,
+            eventStage.PRESALES
         );
-        uint256 newTicketId = numTickets++;
-        _safeMint(marketPlace.getMarketPlaceAddress(), newTicketId);
-        IDToTicket[newTicketId] = newTicket;
-        typeToTicketIds[_type].push(newTicketId);
-        emit ticketCreated(newTicketId);
-        return newTicketId;
+        uint256 newEventId = numEvents++;
+        ticketEvents[newEventId] = eventInstance;
+        return newEventId;
     }
 
-    function buyTicketsDuringPostEvent(uint256 tokenId)
-        public
-        payable
-        requireValidTicket(tokenId)
-        requiredEventStage(eventStage.POSTEVENT)
-    {
-        Ticket memory ticketToBuy = IDToTicket[tokenId];
-        require(ticketToBuy.isListed == true, "Cannot buy, Ticket not lised");
-        // ticket count does not matter any more after the event
-        safeTransferFrom(ticketToBuy._ticketOwner, msg.sender, tokenId);
-        ticketToBuy._ticketOwner = msg.sender;
-        ticketToBuy.isListed = false;
 
-        // is tokenId == ticketId?
-        emit ticketBought(tokenId);
-    }
+    // function buyTicketsDuringPostEvent(uint256 tokenId)
+    //     public
+    //     payable
+    //     requireValidTicket(tokenId)
+    //     requiredEventStage(eventStage.POSTEVENT)
+    // {
+    //     Ticket memory ticketToBuy = IDToTicket[tokenId];
+    //     require(ticketToBuy.isListed == true, "Cannot buy, Ticket not lised");
+    //     // ticket count does not matter any more after the event
+    //     safeTransferFrom(ticketToBuy._ticketOwner, msg.sender, tokenId);
+    //     ticketToBuy._ticketOwner = msg.sender;
+    //     ticketToBuy.isListed = false;
 
-    function createTicketInBulk(
-        string memory _seat,
-        string memory _type,
-        uint256 _creationPrice,
-        uint256 _numOfTickets
-    ) public onlyEventOrganizer requiredEventStage(eventStage.PRESALES) {
-        for (uint256 i = 0; i < _numOfTickets; i++) {
-            createTicket(_seat, _type, _creationPrice);
-        }
-    }
+    //     // is tokenId == ticketId?
+    //     emit ticketBought(tokenId);
+    // }
 
-    function buyTicketsDuringSales(uint256 tokenId)
-        public
-        payable
-        onlyOwner
-        requiredEventStage(eventStage.SALES)
-        requireValidTicket(tokenId)
-        addressCanPurchaseMore(msg.sender)
-    {
-        uint256 payableAmount = IDToTicket[tokenId].listingPrice;
-        require(
-            msg.value >= payableAmount,
-            "Insufficient funds to purchase ticket"
-        );
-        require(IDToTicket[tokenId].isListed == true, "Ticket not listed");
+    // function buyTicketsDuringSales(uint256 tokenId)
+    //     public
+    //     payable
+    //     onlyOwner
+    //     requiredEventStage(eventStage.SALES)
+    //     requireValidTicket(tokenId)
+    //     addressCanPurchaseMore(msg.sender)
+    // {
+    //     uint256 payableAmount = IDToTicket[tokenId].listingPrice;
+    //     require(
+    //         msg.value >= payableAmount,
+    //         "Insufficient funds to purchase ticket"
+    //     );
+    //     require(IDToTicket[tokenId].isListed == true, "Ticket not listed");
 
-        uint256 amountPaid = msg.value;
-        // ticket was resold
-        if (IDToTicket[tokenId]._ticketOwner != address(0)) {
-            ticketCountPerOwner[IDToTicket[tokenId]._ticketOwner]--;
-            address payable reseller = payable(
-                address(uint160(IDToTicket[tokenId]._ticketOwner))
-            );
-            uint256 resaleValAfterCommission = amountPaid - commissionFee;
-            reseller.transfer(resaleValAfterCommission);
-        }
+    //     uint256 amountPaid = msg.value;
+    //     // ticket was resold
+    //     if (IDToTicket[tokenId]._ticketOwner != address(0)) {
+    //         ticketCountPerOwner[IDToTicket[tokenId]._ticketOwner]--;
+    //         address payable reseller = payable(
+    //             address(uint160(IDToTicket[tokenId]._ticketOwner))
+    //         );
+    //         uint256 resaleValAfterCommission = amountPaid - commissionFee;
+    //         reseller.transfer(resaleValAfterCommission);
+    //     }
 
-        // tx.origin is used since the original buyer calls this function via market place contract
-        ticketCountPerOwner[tx.origin]++;
+    //     // tx.origin is used since the original buyer calls this function via market place contract
+    //     ticketCountPerOwner[tx.origin]++;
 
-        // can implement returning of balance if we want.
-        IDToTicket[tokenId]._ticketOwner = tx.origin;
-        IDToTicket[tokenId].isListed = false;
-        emit ticketBought(tokenId);
-    }
+    //     // can implement returning of balance if we want.
+    //     IDToTicket[tokenId]._ticketOwner = tx.origin;
+    //     IDToTicket[tokenId].isListed = false;
+    //     emit ticketBought(tokenId);
+    // }
 
     // only need to list ticket during sales period
     // after sales become post sales the ticket can be sold as an NFT
-    function listTicket(uint256 tokenId, uint256 _newListingPrice)
-        public
-        requireValidTicket(tokenId)
-        onlyTicketOwner(tokenId)
-        requiredEventStage(eventStage.SALES)
-    {
-        require(
-            IDToTicket[tokenId].isListed == false,
-            "Ticket is currently listed"
-        );
+    // function listTicket(uint256 tokenId, uint256 _newListingPrice)
+    //     public
+    //     requireValidTicket(tokenId)
+    //     onlyTicketOwner(tokenId)
+    //     requiredEventStage(eventStage.SALES)
+    // {
+    //     require(
+    //         IDToTicket[tokenId].isListed == false,
+    //         "Ticket is currently listed"
+    //     );
 
-        require(
-            _newListingPrice <= resaleCeiling + commissionFee,
-            string(
-                abi.encodePacked(
-                    "Resale price cannot be greater than ",
-                    resaleCeiling
-                )
-            )
-        );
+    //     require(
+    //         _newListingPrice <= resaleCeiling + commissionFee,
+    //         string(
+    //             abi.encodePacked(
+    //                 "Resale price cannot be greater than ",
+    //                 resaleCeiling
+    //             )
+    //         )
+    //     );
 
-        IDToTicket[tokenId].isListed = true;
-        emit ticketListed(tokenId);
-    }
+    //     IDToTicket[tokenId].isListed = true;
+    //     emit ticketListed(tokenId);
+    // }
 
-    function unlistTicket(uint256 tokenId)
-        public
-        requireValidTicket(tokenId)
-        onlyTicketOwner(tokenId)
-        requiredEventStage(eventStage.SALES)
-    {
-        require(
-            IDToTicket[tokenId].isListed == true,
-            "Ticket is currently unlisted"
-        );
-        IDToTicket[tokenId].isListed = false;
-        emit ticketUnlisted(tokenId);
-    }
+    // function unlistTicket(uint256 tokenId)
+    //     public
+    //     requireValidTicket(tokenId)
+    //     onlyTicketOwner(tokenId)
+    //     requiredEventStage(eventStage.SALES)
+    // {
+    //     require(
+    //         IDToTicket[tokenId].isListed == true,
+    //         "Ticket is currently unlisted"
+    //     );
+    //     IDToTicket[tokenId].isListed = false;
+    //     emit ticketUnlisted(tokenId);
+    // }
 
     //////////////////////////////////////////////////////////
     // Event Day Functions
-    function checkInTicket(uint256 tokenId)
-        public
-        onlyEventOrganizer
-        requireValidTicket(tokenId)
-        requiredEventStage(eventStage.SALES)
-    {
-        require(
-            IDToTicket[tokenId].isValid == true,
-            "The ticket has been invalidated"
-        );
-        require(
-            IDToTicket[tokenId].isCheckedIn == false,
-            "Ticket is already checked in"
-        );
-        IDToTicket[tokenId].isCheckedIn = true;
-        emit ticketCheckedIn(tokenId);
-    }
+    // function checkInTicket(uint256 tokenId)
+    //     public
+    //     onlyEventOrganizer
+    //     requireValidTicket(tokenId)
+    //     requiredEventStage(eventStage.SALES)
+    // {
+    //     require(
+    //         IDToTicket[tokenId].isValid == true,
+    //         "The ticket has been invalidated"
+    //     );
+    //     require(
+    //         IDToTicket[tokenId].isCheckedIn == false,
+    //         "Ticket is already checked in"
+    //     );
+    //     IDToTicket[tokenId].isCheckedIn = true;
+    //     emit ticketCheckedIn(tokenId);
+    // }
 
     //////////////////////////////////////////////////////////
     // Administration Functions
-    function invalidateTicket(uint256 tokenId)
-        public
-        onlyEventOrganizer
-        requireValidTicket(tokenId)
-    {
-        require(
-            IDToTicket[tokenId].isValid == true,
-            "The ticket has already been invalidated"
-        );
+    // function invalidateTicket(uint256 tokenId)
+    //     public
+    //     onlyEventOrganizer
+    //     requireValidTicket(tokenId)
+    // {
+    //     require(
+    //         IDToTicket[tokenId].isValid == true,
+    //         "The ticket has already been invalidated"
+    //     );
 
-        IDToTicket[tokenId].isValid = false;
-        emit ticketInvalidated(tokenId);
-    }
+    //     IDToTicket[tokenId].isValid = false;
+    //     emit ticketInvalidated(tokenId);
+    // }
 
-    function validateTicket(uint256 tokenId)
-        public
-        onlyEventOrganizer
-        requireValidTicket(tokenId)
-    {
-        require(
-            IDToTicket[tokenId].isValid == false,
-            "The ticket is already valid"
-        );
+    // function validateTicket(uint256 tokenId)
+    //     public
+    //     onlyEventOrganizer
+    //     requireValidTicket(tokenId)
+    // {
+    //     require(
+    //         IDToTicket[tokenId].isValid == false,
+    //         "The ticket is already valid"
+    //     );
 
-        IDToTicket[tokenId].isValid = true;
+    //     IDToTicket[tokenId].isValid = true;
 
-        emit ticketValidated(tokenId);
-    }
+    //     emit ticketValidated(tokenId);
+    // }
 
     //////////////////////////////////////////////////////
     // state changing functions
 
     // presalse --> sales
-    function changeStateToSales()
-        public
-        onlyEventOrganizer
-        requiredEventStage(eventStage.PRESALES)
-    {
-        currentStage = eventStage.SALES;
-    }
+    // function changeStateToSales()
+    //     public
+    //     onlyEventOrganizer
+    //     requiredEventStage(eventStage.PRESALES)
+    // {
+    //     currentStage = eventStage.SALES;
+    // }
 
-    // sales --> during event
-    function changeStateToDuring()
-        public
-        onlyEventOrganizer
-        requiredEventStage(eventStage.SALES)
-    {
-        currentStage = eventStage.DURINGEVENT;
-    }
+    // // sales --> during event
+    // function changeStateToDuring()
+    //     public
+    //     onlyEventOrganizer
+    //     requiredEventStage(eventStage.SALES)
+    // {
+    //     currentStage = eventStage.DURINGEVENT;
+    // }
 
-    // during event --> post event
-    // called by the token owner
-    function changeStateToPostEvent()
-        public
-        onlyEventOrganizer
-        requiredEventStage(eventStage.DURINGEVENT)
-    {
-        currentStage = eventStage.POSTEVENT;
-    }
+    // // during event --> post event
+    // // called by the token owner
+    // function changeStateToPostEvent()
+    //     public
+    //     onlyEventOrganizer
+    //     requiredEventStage(eventStage.DURINGEVENT)
+    // {
+    //     currentStage = eventStage.POSTEVENT;
+    // }
 
     ////////////////////////////////////////////////////////////
     //getters
 
-    function getEventId() public view returns (uint256) {
-        return eventId;
+    // function getEventId() public view returns (uint256) {
+    //     return eventId;
+    // }
+
+    function getEventName(uint256 eventId) public view returns (string memory) {
+        return ticketEvents[eventId]._eventName;
     }
 
-    function getEventName() public view returns (string memory) {
-        return eventName;
+    function getEventOrganizer(uint256 eventId) public view returns (address) {
+        return ticketEvents[eventId]._eventOrganizer;
     }
 
-    function getEventOrganizer() public view returns (address) {
-        return eventOrganizer;
+    function getCompany(uint256 eventId) public view returns (string memory) {
+        return ticketEvents[eventId]._company;
     }
 
-    function getCompany() public view returns (string memory) {
-        return company;
+    function getResaleCeiling(uint256 eventId) public view returns (uint256) {
+        return ticketEvents[eventId]._resaleCeiling;
     }
 
-    function getResaleCeiling() public view returns (uint256) {
-        return resaleCeiling;
+    function getEventDate(uint256 eventId) public view returns (uint256) {
+        return ticketEvents[eventId]._eventDate;
     }
+    
 
-    function getEventDate() public view returns (uint256) {
-        return eventDate;
-    }
 
-    function getTicket(uint256 id)
-        public
-        view
-        requireValidTicket(id)
-        returns (Ticket memory)
-    {
-        return IDToTicket[id];
-    }
 
-    function getCurrentTicketCount() public view returns (uint256) {
-        return ticketCountPerOwner[msg.sender];
-    }
-
-    function getMarketPlaceInstance() public view returns (MarketPlace) {
-        return marketPlace;
-    }
+    // function getMarketPlaceInstance() public view returns (MarketPlace) {
+    //     return marketPlace;
+    // }
 }

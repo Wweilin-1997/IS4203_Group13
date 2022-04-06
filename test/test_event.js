@@ -3,6 +3,8 @@ const truffleAssert = require('truffle-assertions');
 var assert = require('assert');
 
 var Event = artifacts.require("../contracts/Event.sol");
+var Ticket = artifacts.require("../contracts/Ticket.sol");
+
 var MarketPlace = artifacts.require("../contracts/MarketPlace.sol");
 
 /*Testing Event Related Use Cases*/
@@ -10,12 +12,12 @@ var MarketPlace = artifacts.require("../contracts/MarketPlace.sol");
 contract('Event', function(accounts){
     before(async () => {
         marketplaceInstance = await MarketPlace.deployed();
-
+        eventInstance = await Event.deployed();
+        ticketInstance = await Ticket.deployed();
     })
-    let createEvent1; 
 
     it('Create Event', async () => {
-        createEvent1 = await marketplaceInstance.createEvent(
+        let createEvent1 = await eventInstance.createEvent(
             "Event 1",
             "EV1",
             "Singapore",
@@ -31,19 +33,12 @@ contract('Event', function(accounts){
             undefined,
             "Failed to create Event"
         );
-      
-        let numEvents = await marketplaceInstance.getTotalEvents();
-        assert.equal(
-            numEvents,
-            1,
-            "Failed to create Event"
-        );
     })
 
     it('Create Tickets in Bulk for a particular Type', async () => {
-        let event1 = await marketplaceInstance.getEvent(1);
-        console.log(event1)
-   
+       let ticketsForEvent1 = await ticketInstance.createTicketInBulk(
+           "typeA", 100000000000000, 1, 1, {from: accounts[1]}
+       )
     })
     
     it('Transferring tickets from one user to another', async () =>{

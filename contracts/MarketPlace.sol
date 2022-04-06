@@ -31,14 +31,14 @@ contract MarketPlace is ReentrancyGuard {
     event eventAdded(uint256 eventId, string eventName);
     event buyTicket(uint256 eventId, uint256 ticketId);
 
-    function addEvent(Event _event) public {
-        require(
-            address(events[_event.getEventId()]) == address(0),
-            "There is an existing event with the same name"
-        );
-        events[_event.getEventId()] = address(_event);
-        emit eventAdded(_event.getEventId(), _event.getEventName());
-    }
+    // function addEvent(Event _event) public {
+    //     require(
+    //         address(events[_event.getEventId()]) == address(0),
+    //         "There is an existing event with the same name"
+    //     );
+    //     events[_event.getEventId()] = address(_event);
+    //     emit eventAdded(_event.getEventId(), _event.getEventName());
+    // }
 
     // // list and unlist functions
     // function list(
@@ -79,39 +79,39 @@ contract MarketPlace is ReentrancyGuard {
     //     return prices[eventName][tokenId];
     // }
 
-    function buy(uint256 eventId, uint256 tokenId) public nonReentrant {
-        // same require event exists
-        Event listedEvent = Event(events[eventId]);
-        listedEvent.buyTicketsDuringSales(tokenId);
-        emit buyTicket(eventId, tokenId);
-    }
+    // function buy(uint256 eventId, uint256 tokenId) public nonReentrant {
+    //     // same require event exists
+    //     Event listedEvent = Event(events[eventId]);
+    //     listedEvent.buyTicketsDuringSales(tokenId);
+    //     emit buyTicket(eventId, tokenId);
+    // }
 
-    function createEvent(
-        string memory _eventName,
-        string memory _symbol,
-        string memory _location,
-        string memory _company,
-        uint256 _resaleCeiling,
-        uint256 _maxTicketsPerAddress,
-        uint256 _commissionFee,
-        uint256 _eventDate
-    ) public {
-        totalEvents++;
-        Event eventInstance = new Event(
-            totalEvents,
-            _eventName,
-            _symbol,
-            _location,
-            _company,
-            _resaleCeiling,
-            _maxTicketsPerAddress,
-            _commissionFee,
-            _eventDate,
-            this
-        );
+    // function createEvent(
+    //     string memory _eventName,
+    //     string memory _symbol,
+    //     string memory _location,
+    //     string memory _company,
+    //     uint256 _resaleCeiling,
+    //     uint256 _maxTicketsPerAddress,
+    //     uint256 _commissionFee,
+    //     uint256 _eventDate
+    // ) public {
+    //     totalEvents++;
+    //     Event eventInstance = new Event(
+    //         totalEvents,
+    //         _eventName,
+    //         _symbol,
+    //         _location,
+    //         _company,
+    //         _resaleCeiling,
+    //         _maxTicketsPerAddress,
+    //         _commissionFee,
+    //         _eventDate,
+    //         this
+    //     );
 
-        addEvent(eventInstance);
-    }
+    //     addEvent(eventInstance);
+    // }
 
     ///////////////////////////////////////////////////////
     //getters
