@@ -14,7 +14,7 @@ contract Event is ERC721 {
     uint256 commissionFee;
     uint256 eventDate;
     // mapping(uint256 => uint256) listPrice;
-    address marketPlaceAddress; // hardcoded address of the market place
+    MarketPlace marketPlace; // hardcoded address of the market place
     string ticketImageUrl;
     mapping(uint256 => Ticket) IDToTicket;
     // mapping(ticketId => mapping(uint256 => address)) transactions;
@@ -56,7 +56,7 @@ contract Event is ERC721 {
 
     modifier onlyMarketPlace() {
         require(
-            msg.sender == marketPlaceAddress,
+            msg.sender == address(marketPlace),
             "You're not authorized to perform this action"
         );
         _;
@@ -95,7 +95,8 @@ contract Event is ERC721 {
         uint256 _resaleCeiling,
         uint256 _maxTicketsPerAddress,
         uint256 _commissionFee,
-        uint256 _eventDate
+        uint256 _eventDate,
+        MarketPlace _marketPlace
     ) ERC721(_eventName, _symbol) {
         eventName = _eventName;
         eventOrganizer = msg.sender;
@@ -107,9 +108,7 @@ contract Event is ERC721 {
         commissionFee = _commissionFee;
         eventDate = _eventDate;
         currentStage = eventStage.PRESALES;
-        // MarketPlace(0x4a889BF8Cd9d6118f4e38591FF6D9D3F32Ad611c).addEvent(
-        //     _eventName
-        // );
+        marketPlace = _marketPlace;
     }
 
     function createTicket(
@@ -133,7 +132,7 @@ contract Event is ERC721 {
             true
         );
         uint256 newTicketId = numTickets++;
-        _safeMint(marketPlaceAddress, newTicketId);
+        _safeMint(address(marketPlace), newTicketId);
         IDToTicket[newTicketId] = newTicket;
         typeToTicketIds[_type].push(newTicketId);
         return newTicketId;
@@ -309,7 +308,7 @@ contract Event is ERC721 {
     // called by the token owner
     function changeStateToPostEvent()
         public
-        onlyEventOrganizer 
+        onlyEventOrganizer
         requiredEventStage(eventStage.DURINGEVENT)
     {
         currentStage = eventStage.POSTEVENT;
