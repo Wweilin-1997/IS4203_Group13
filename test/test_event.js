@@ -9,17 +9,47 @@ var MarketPlace = artifacts.require("../contracts/MarketPlace.sol");
 
 contract('Event', function(accounts){
     before(async () => {
-        eventInstance = await Event.deployed();
-    })
+        marketplaceInstance = await MarketPlace.deployed();
 
-    console.log("Testing Event Contract")
+    })
+    let createEvent1; 
 
     it('Create Event', async () => {
-
+        createEvent1 = await marketplaceInstance.createEvent(
+            "Event 1",
+            "EV1",
+            "Singapore",
+            "Event Organizer Company",
+            5,
+            5,
+            5,
+            1,
+            {from: accounts[1]}
+        )
+        assert.notStrictEqual(
+            createEvent1,
+            undefined,
+            "Failed to create Event"
+        );
+      
+        let numEvents = await marketplaceInstance.getTotalEvents();
+        console.log(numEvents)
+        assert.equal(
+            numEvents,
+            1,
+            "Failed to create Event"
+        );
     })
-    
+
     it('Create Tickets in Bulk for a particular Type', async () => {
-    
+      
+        
+        let bulkTickets = await createEvent1.createTicketInBulk(
+            "1",
+            "type A",
+            1000000,
+            123
+        )
     })
     
     it('Transferring tickets from one user to another', async () =>{
