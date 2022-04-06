@@ -67,6 +67,7 @@ contract Ticket is ERC721, Ownable {
         uint256 _eventId
     )
         public
+        onlyEventOrganizer(_eventId)
         returns (uint256)
     {
         ticket memory newTicket = ticket(
@@ -100,6 +101,22 @@ contract Ticket is ERC721, Ownable {
             createTicket(currentSeatID, _type, _creationPrice, _eventId);
         }
     }
+
+     function validateTicket(uint256 tokenId, uint256 eventId)
+        public
+        onlyEventOrganizer(eventId)
+        requireValidTicket(tokenId)
+    {
+        require(
+            IDToTicket[tokenId].isValid == false,
+            "The ticket is already valid"
+        );
+
+        IDToTicket[tokenId].isValid = true;
+
+        emit ticketValidated(tokenId);
+    }
+
 
 
     function getTicket(uint256 id)

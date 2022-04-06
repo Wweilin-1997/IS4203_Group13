@@ -16,9 +16,9 @@ contract('Event', function(accounts){
         ticketInstance = await Ticket.deployed();
     })
 
-    it('Create Event', async () => {
+    it('Create First Event', async () => {
         let createEvent1 = await eventInstance.createEvent(
-            "Event 1",
+            "Event 0",
             "EV1",
             "Singapore",
             "Event Organizer Company",
@@ -27,25 +27,24 @@ contract('Event', function(accounts){
             5,
             1,
             {from: accounts[1]}
-        )
-        assert.notStrictEqual(
-            createEvent1,
-            undefined,
-            "Failed to create Event"
         );
+       
+
+        let firstEventOrganizer = await eventInstance.getEventOrganizer(0)
+        console.log(firstEventOrganizer)
     })
 
     it('Create Tickets in Bulk for a particular Type', async () => {
         let numberOfTicketsTobeCreated = 5
-       let ticketsForEvent1 = await ticketInstance.createTicketInBulk(
-           "typeA", 100000000000000, numberOfTicketsTobeCreated, 1, {from: accounts[1]}
-       )
+        let ticketsForEvent1 = await ticketInstance.createTicketInBulk(
+            "typeA", 100000000000000, numberOfTicketsTobeCreated, 0, {from: accounts[1]}
+        )
 
-       let ticketIDsForEvent1 = await ticketInstance.getTicketsForEventId(1);
+       let ticketIDsForEvent1 = await ticketInstance.getTicketsForEventId(0);
        assert.strictEqual(
             numberOfTicketsTobeCreated,
             ticketIDsForEvent1.length,
-            "Failed to create number of tickets"
+            "Failed to create correct number of tickets"
         );
     })
     
