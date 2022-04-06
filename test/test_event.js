@@ -33,7 +33,6 @@ contract('Event', function(accounts){
         );
       
         let numEvents = await marketplaceInstance.getTotalEvents();
-        console.log(numEvents)
         assert.equal(
             numEvents,
             1,
@@ -42,14 +41,9 @@ contract('Event', function(accounts){
     })
 
     it('Create Tickets in Bulk for a particular Type', async () => {
-      
-        
-        let bulkTickets = await createEvent1.createTicketInBulk(
-            "1",
-            "type A",
-            1000000,
-            123
-        )
+        let event1 = await marketplaceInstance.getEvent(1);
+        console.log(event1)
+   
     })
     
     it('Transferring tickets from one user to another', async () =>{
