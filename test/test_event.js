@@ -36,9 +36,17 @@ contract('Event', function(accounts){
     })
 
     it('Create Tickets in Bulk for a particular Type', async () => {
+        let numberOfTicketsTobeCreated = 5
        let ticketsForEvent1 = await ticketInstance.createTicketInBulk(
-           "typeA", 100000000000000, 1, 1, {from: accounts[1]}
+           "typeA", 100000000000000, numberOfTicketsTobeCreated, 1, {from: accounts[1]}
        )
+
+       let ticketIDsForEvent1 = await ticketInstance.getTicketsForEventId(1);
+       assert.strictEqual(
+            numberOfTicketsTobeCreated,
+            ticketIDsForEvent1.length,
+            "Failed to create number of tickets"
+        );
     })
     
     it('Transferring tickets from one user to another', async () =>{

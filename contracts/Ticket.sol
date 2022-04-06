@@ -84,6 +84,7 @@ contract Ticket is ERC721, Ownable {
         _safeMint(marketplaceContract.getMarketPlaceAddress(), newTicketId);
         IDToTicket[newTicketId] = newTicket;
         typeToTicketIds[_type].push(newTicketId);
+        eventIdToTicketIds[_eventId].push(newTicketId);
         emit ticketCreated(newTicketId);
         return newTicketId;
     }
@@ -112,6 +113,10 @@ contract Ticket is ERC721, Ownable {
 
      function getCurrentTicketCount() public view returns (uint256) {
         return ticketCountPerOwner[msg.sender];
+    }
+
+    function getTicketsForEventId(uint256 eventId) public view returns (uint256[] memory) {
+        return eventIdToTicketIds[eventId];
     }
   
 }

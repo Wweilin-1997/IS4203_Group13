@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 import "./Event.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-contract MarketPlace is ReentrancyGuard {
+contract MarketPlace is ReentrancyGuard, IERC721Receiver {
     uint256 commissonFee;
     //Event eventContract;
     mapping(uint256 => address) events;
@@ -31,6 +32,13 @@ contract MarketPlace is ReentrancyGuard {
     event eventAdded(uint256 eventId, string eventName);
     event buyTicket(uint256 eventId, uint256 ticketId);
 
+     function onERC721Received( address operator, address from, uint256 tokenId, bytes calldata data ) public override returns (bytes4) {
+            return this.onERC721Received.selector;
+    }
+
+    // function onERC721Received(address _from, uint256 _tokenId, bytes _data) public returns(bytes4);
+    //   return this.onERC721Received.selector;
+    // }
     // function addEvent(Event _event) public {
     //     require(
     //         address(events[_event.getEventId()]) == address(0),
