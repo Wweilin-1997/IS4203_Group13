@@ -49,16 +49,51 @@ contract('Event', function(accounts){
     })
     
     it('Transferring tickets from one user to another', async () =>{
-
-    })
-
-    it('Validate ticket', async () => {
-
+        // let ticket0 = await ticketInstance.getTicket(0);
+        // console.log(ticket0);
+        // await ticketInstance.validateTicket(0, 0);
     })
 
     it('Invalidate ticket', async () => {
+        await ticketInstance.invalidateTicket(0, 0, {from: accounts[1]});
+        
+        let ticketAfterUpdate = await ticketInstance.getTicket(0);
+        let newValidity = ticketAfterUpdate.isValid;
 
+        
+        assert.strictEqual(
+            newValidity,
+            false,
+            "Failed Invalidate ticket"
+        );
     })
+
+    it('Validate ticket', async () => {
+        await ticketInstance.validateTicket(0, 0, {from: accounts[1]});
+        
+        let ticketAfterUpdate = await ticketInstance.getTicket(0);
+        let newValidity = ticketAfterUpdate.isValid;
+
+        
+        assert.strictEqual(
+            newValidity,
+            true,
+            "Failed Invalidate ticket"
+        );
+    })
+
+    // it('Validate ticket', async () => {
+    //     let ticket0 = await ticketInstance.getTicket(0);
+    //     console.log(ticket0.isValid);
+        
+    //     assert.strictEqual(
+    //         numberOfTicketsTobeCreated,
+    //         true,
+    //         "Failed to create correct number of tickets"
+    //     );
+
+    // })
+
 
     it('Check in ticket', async () => {
         

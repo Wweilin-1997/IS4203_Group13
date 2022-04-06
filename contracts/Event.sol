@@ -315,6 +315,15 @@ contract Event is Ownable {
     }
     
 
+    function getEventStage(uint256 eventId) public view returns (eventStage) {
+        return ticketEvents[eventId].stage;
+    }
+
+    function getStageEnum(uint _value) public view returns (eventStage) {
+        return eventStage(_value);
+    }
+    
+
 
 
     // function getMarketPlaceInstance() public view returns (MarketPlace) {

@@ -6,6 +6,12 @@ import "./MarketPlace.sol";
 import "./Event.sol";
 
 contract Ticket is ERC721, Ownable {
+    enum eventStage {
+        PRESALES,
+        SALES,
+        DURINGEVENT,
+        POSTEVENT
+    }
 
     struct ticket {
         // address _marketPlaceAddress;
@@ -44,6 +50,43 @@ contract Ticket is ERC721, Ownable {
         _;
     }
 
+
+    // modifier requiredPresaleEventStage(uint256 eventId) {
+    //     require(
+    //         eventContract.getPresaleStage() == eventContract.getEventStage(eventId),
+    //         "The action is not available outside of Presale"
+    //     );
+    //     _;
+    // }
+    //  modifier requiredSalesEventStage(uint256 eventId) {
+    //     require(
+    //         eventContract.getPresaleStage() == eventContract.getEventStage(eventId),
+    //         "The action is not available outside of Presale"
+    //     );
+    //     _;
+    // }
+    //  modifier requiredDuringEventStage(uint256 eventId) {
+    //     require(
+    //         eventContract.getPresaleStage() == eventContract.getEventStage(eventId),
+    //         "The action is not available outside of Presale"
+    //     );
+    //     _;
+    // }
+    //  modifier requiredPostEventStage(uint256 eventId) {
+    //     require(
+    //         eventContract.getPresaleStage() == eventContract.getEventStage(eventId),
+    //         "The action is not available outside of Presale"
+    //     );
+    //     _;
+    // }
+
+    modifier requiredEventStage(uint256 eventId, uint256 stageEnumValue) {
+        require(
+            eventContract.getEventStage(eventId) == eventContract.getStageEnum(stageEnumValue),
+            "The action is not available at this stage"
+        );
+        _;
+    }
 
     modifier onlyEventOrganizer(uint256 eventId) {
         require(
@@ -117,6 +160,38 @@ contract Ticket is ERC721, Ownable {
         emit ticketValidated(tokenId);
     }
 
+       function invalidateTicket(uint256 tokenId, uint256 eventId)
+        public
+        onlyEventOrganizer(eventId)
+        requireValidTicket(tokenId)
+    {
+        require(
+            IDToTicket[tokenId].isValid == true,
+            "The ticket has already been invalidated"
+        );
+
+        IDToTicket[tokenId].isValid = false;
+        emit ticketInvalidated(tokenId);
+    }
+
+      function checkInTicket(uint256 tokenId, uint256 eventId, uint256 enumStageValue)
+        public
+        onlyEventOrganizer(eventId)
+        requireValidTicket(tokenId)
+        requiredEventStage(enumStageValue, eventId)
+    {
+        require(
+            IDToTicket[tokenId].isValid == true,
+            "The ticket has been invalidated"
+        );
+        require(
+            IDToTicket[tokenId].isCheckedIn == false,
+            "Ticket is already checked in"
+        );
+        IDToTicket[tokenId].isCheckedIn = true;
+        emit ticketCheckedIn(tokenId);
+    }
+
 
 
     function getTicket(uint256 id)
@@ -127,6 +202,8 @@ contract Ticket is ERC721, Ownable {
     {
         return IDToTicket[id];
     }
+
+
 
      function getCurrentTicketCount() public view returns (uint256) {
         return ticketCountPerOwner[msg.sender];
