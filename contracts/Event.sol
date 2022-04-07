@@ -4,6 +4,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "./MarketPlace.sol";
 
 contract Event is ERC721 {
+
     string eventName;
     address eventOrganizer;
     string location;
@@ -234,6 +235,7 @@ contract Event is ERC721 {
         );
 
         IDToTicket[tokenId].isListed = true;
+        marketPlace.listTicket(eventName, tokenId, _newListingPrice);
         emit ticketListed(tokenId);
     }
 
@@ -248,6 +250,7 @@ contract Event is ERC721 {
             "Ticket is currently unlisted"
         );
         IDToTicket[tokenId].isListed = false;
+        marketPlace.unlistTicket(eventName, tokenId);
         emit ticketUnlisted(tokenId);
     }
 
@@ -330,4 +333,49 @@ contract Event is ERC721 {
     {
         currentStage = eventStage.POSTEVENT;
     }
+
+    // getters
+    function getTicket(uint256 ticketId) public view returns (Ticket memory) {
+        return IDToTicket[ticketId];
+    }
+    function getEventName() public view returns (string memory) {
+        return eventName;
+    }
+
+    function getEventOrganizer() public view returns (address) {
+        return eventOrganizer;
+    }
+
+    function getLocation() public view returns (string memory) {
+        return location;
+    }
+
+    function getCompany() public view returns (string memory) {
+        return company;
+    }
+
+    function getTotalTickets() public view returns (uint256) {
+        return numTickets;
+    }
+
+    function getMaxTicksPerAddress() public view returns (uint256) {
+        return maxTicketsPerAddress;
+    }
+
+    function getComissionFee() public view returns (uint256) {
+        return commissionFee;
+    }
+
+    function getEventDate() public view returns (uint256) {
+        return eventDate;
+    }
+
+    function getTicketImageUrl() public view returns (string memory) {
+        return ticketImageUrl;
+    }
+
+    function getCurrentTicketCount() public view returns (uint256) {
+        return ticketCountPerOwner[msg.sender];
+    }
+
 }
