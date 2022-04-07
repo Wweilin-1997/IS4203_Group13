@@ -19,12 +19,15 @@ contract MarketPlace {
     //mapping method
     constructor() {}
 
+    event eventAdded(string eventName);
+
     function addEvent(string memory _eventName) public {
         require(
             address(events[_eventName]) == address(0),
             "There is an existing event with the same name"
         );
         events[_eventName] = Event(msg.sender);
+        emit eventAdded(_eventName);
     }
 
     // // list and unlist functions

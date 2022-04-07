@@ -29,6 +29,15 @@ contract Event is ERC721 {
         POSTEVENT
     }
 
+    event ticketCreated(uint256 tokenId);
+    event ticketBoughtDuringPostEvent(uint256 tokenId);
+    event ticketBoughtDuringSales(uint256 tokenId);
+    event ticketListed(uint256 tokenId);
+    event ticketUnlisted(uint256 tokenId);
+    event ticketCheckedIn(uint256 tokenId);
+    event ticketInvalidated(uint256 tokenId);
+    event ticketValidated(uint256 tokenId);
+
     modifier requiredEventStage(eventStage stage) {
         require(
             stage == currentStage,
@@ -135,6 +144,7 @@ contract Event is ERC721 {
         _safeMint(address(marketPlace), newTicketId);
         IDToTicket[newTicketId] = newTicket;
         typeToTicketIds[_type].push(newTicketId);
+        emit ticketCreated(newTicketId);
         return newTicketId;
     }
 
@@ -150,6 +160,7 @@ contract Event is ERC721 {
         safeTransferFrom(ticketToBuy._ticketOwner, msg.sender, tokenId);
         ticketToBuy._ticketOwner = msg.sender;
         ticketToBuy.isListed = false;
+        emit ticketBoughtDuringPostEvent(tokenId);
     }
 
     function createTicketInBulk(
@@ -160,7 +171,7 @@ contract Event is ERC721 {
     ) public onlyEventOrganizer requiredEventStage(eventStage.PRESALES) {
         for (uint256 i = 0; i < _numOfTickets; i++) {
             uint256 tokenId = createTicket(_seat, _type, _creationPrice);
-            listTicket(tokenId, _newListingPrice);
+            listTicket(tokenId, _creationPrice);
         }
     }
 
@@ -196,6 +207,7 @@ contract Event is ERC721 {
         // can implement returning of balance if we want.
         IDToTicket[tokenId]._ticketOwner = tx.origin;
         IDToTicket[tokenId].isListed = false;
+        emit ticketBoughtDuringSales(tokenId);
     }
 
     // only need to list ticket during sales period
@@ -222,6 +234,7 @@ contract Event is ERC721 {
         );
 
         IDToTicket[tokenId].isListed = true;
+        emit ticketListed(tokenId);
     }
 
     function unlistTicket(uint256 tokenId)
@@ -235,6 +248,7 @@ contract Event is ERC721 {
             "Ticket is currently unlisted"
         );
         IDToTicket[tokenId].isListed = false;
+        emit ticketUnlisted(tokenId);
     }
 
     //////////////////////////////////////////////////////////
@@ -254,6 +268,7 @@ contract Event is ERC721 {
             "Ticket is already checked in"
         );
         IDToTicket[tokenId].isCheckedIn = true;
+        emit ticketCheckedIn(tokenId);
     }
 
     //////////////////////////////////////////////////////////
@@ -282,6 +297,7 @@ contract Event is ERC721 {
         );
 
         IDToTicket[tokenId].isValid = true;
+        emit ticketValidated(tokenId);
     }
 
     //////////////////////////////////////////////////////
