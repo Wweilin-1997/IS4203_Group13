@@ -95,7 +95,7 @@ contract Event is ERC721 {
         uint256 _resaleCeiling,
         uint256 _maxTicketsPerAddress,
         uint256 _commissionFee,
-        uint256 _eventDate,
+        //uint256 _eventDate,
         MarketPlace _marketPlace
     ) ERC721(_eventName, _symbol) {
         eventName = _eventName;
@@ -106,7 +106,7 @@ contract Event is ERC721 {
         resaleCeiling = _resaleCeiling;
         maxTicketsPerAddress = _maxTicketsPerAddress;
         commissionFee = _commissionFee;
-        eventDate = _eventDate;
+        //eventDate = _eventDate;
         currentStage = eventStage.PRESALES;
         marketPlace = _marketPlace;
     }
@@ -159,7 +159,8 @@ contract Event is ERC721 {
         uint256 _numOfTickets
     ) public onlyEventOrganizer requiredEventStage(eventStage.PRESALES) {
         for (uint256 i = 0; i < _numOfTickets; i++) {
-            createTicket(_seat, _type, _creationPrice);
+            uint256 tokenId = createTicket(_seat, _type, _creationPrice);
+            listTicket(tokenId, _newListingPrice);
         }
     }
 

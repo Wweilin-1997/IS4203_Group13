@@ -7,6 +7,25 @@ var MarketPlace = artifacts.require("../contracts/MarketPlace.sol");
 
 contract('MarketPlace', function(accounts){
 
+    before(async () => {
+        eventInstance = await Event.deployed();
+        MarketPlaceInstance = await MarketPlace.deployed();
+    });
+    
+    console.log("Testing Market Place Contract");
+
+    
+    it('Purchase tickets during initial sales', async () =>{
+        let createEvent = await MarketPlaceInstance.addEvent("event1", {from: accounts[1]});
+        //let createTickets = await eventInstance.createTicketInBulk("A", "VIP", 100, 10, {from: accounts[0]});
+        //let purcahse = await eventInstance.buyTicketsDuringSales(1, {from: accounts[2], value: 100});
+
+    })
+    /*
+    it('Purchase tickets cannot exceed max number specified by Event Organiser', async () =>{
+
+    })
+
     it('Listing Ticket', async () => {    
 
     })
@@ -15,17 +34,10 @@ contract('MarketPlace', function(accounts){
 
     })
 
-    it('Purchase tickets during initial sales', async () =>{
-
-    })
-
-    it('Purchase tickets cannot exceed max number specified by Event Organiser', async () =>{
-
-    })
-
     it('Purchase tickets post event', async () =>{
 
     })
+    */
 
 
 })
