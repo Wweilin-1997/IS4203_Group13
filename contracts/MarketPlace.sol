@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 contract MarketPlace is IERC721Receiver{
     //uint256 commissonFee;
     //Event eventContract;
-    mapping(string => Event) events;
+    mapping(address => Event) events;
     mapping(string => mapping(uint256 => uint256)) prices;
     address _owner = msg.sender;
 
@@ -20,15 +20,15 @@ contract MarketPlace is IERC721Receiver{
     //mapping method
     constructor() {}
 
-    event eventAdded(string eventName);
+    event eventAdded(address eventContractAddress);
 
-    function addEvent(string memory _eventName) public {
-        require(
-            address(events[_eventName]) == address(0),
-            "There is an existing event with the same name"
-        );
-        events[_eventName] = Event(msg.sender);
-        emit eventAdded(_eventName);
+    function addEvent(address eventContractAddress) public {
+        // require(
+        //     address(events[eventContractAddress]) == address(0),
+        //     "There is an existing event with the same name"
+        // );
+        events[eventContractAddress] = Event(msg.sender);
+        emit eventAdded(eventContractAddress);
     }
 
   function onERC721Received( address operator, address from, uint256 tokenId, bytes calldata data ) public override returns (bytes4) {
@@ -73,9 +73,9 @@ contract MarketPlace is IERC721Receiver{
     //     return prices[eventName][tokenId];
     // }
 
-    function buy(string memory eventName, uint256 tokenId) public {
+    function buy(address eventContractAddress, uint256 tokenId) public {
         // same require event exists
-        Event listedEvent = events[eventName];
+        Event listedEvent = events[eventContractAddress];
         listedEvent.buyTicketsDuringSales(tokenId);
     }
 }

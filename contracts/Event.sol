@@ -122,6 +122,10 @@ contract Event is ERC721 {
         marketPlace = _marketPlace;
     }
 
+    function addEventToMarketplace() public {
+        marketPlace.addEvent(address(this));
+    }
+
     function createTicket(
         string memory _seat,
         string memory _type,
@@ -364,6 +368,10 @@ contract Event is ERC721 {
 
        function getCurrentEventStage() public view returns (eventStage) {
         return currentStage;
+    }
+
+    function getEventContractAddress() public view returns (address) {
+        return address(this);
     }
 
 }

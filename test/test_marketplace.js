@@ -16,7 +16,16 @@ contract('MarketPlace', function(accounts){
 
     
     it('Purchase tickets during initial sales', async () =>{
-        let createEvent = await MarketPlaceInstance.addEvent("event1", {from: accounts[1]});
+        let eventAddress0 = await eventInstance.getEventContractAddress();
+        console.log(eventAddress0)
+
+        let eventType = "A"
+
+  
+        
+        let typeToTicketIdsForEvent0 = await eventInstance.getTicketsListForEventType(eventType);
+        console.log(typeToTicketIdsForEvent0)
+        // let createEvent = await MarketPlaceInstance.addEvent("event1", {from: accounts[1]});
         //let createTickets = await eventInstance.createTicketInBulk("A", "VIP", 100, 10, {from: accounts[0]});
         //let purcahse = await eventInstance.buyTicketsDuringSales(1, {from: accounts[2], value: 100});
 

@@ -10,7 +10,10 @@ var MarketPlace = artifacts.require("../contracts/MarketPlace.sol");
 contract('Event', function(accounts){
     before(async () => {
         eventInstance = await Event.deployed();
+        marketplaceInstance = await MarketPlace.deployed();
     })
+
+    /**Testing Event */
 
     console.log("Testing Event Contract")
 
@@ -21,6 +24,13 @@ contract('Event', function(accounts){
             accounts[0],
             "Event was not created by the right address"
          );       
+    })
+
+    it('Add Event to Marketplace', async () => {
+        let eventAddress0 = await eventInstance.getEventContractAddress();
+        console.log(eventAddress0);
+        await eventInstance.addEventToMarketplace();
+           
     })
 
     it('Create Tickets in Bulk for a particular Type by wrong Non Event Organizer', async () => {
@@ -44,7 +54,8 @@ contract('Event', function(accounts){
         )
         
         let typeToTicketIdsForEvent0 = await eventInstance.getTicketsListForEventType(eventType);
-       
+        console.log(typeToTicketIdsForEvent0)
+
         truffleAssert.eventEmitted(ticketsForEvent0, "ticketCreated");
 
         assert.strictEqual(
@@ -141,5 +152,8 @@ contract('Event', function(accounts){
             "The ticket has been invalidated"
         );
     })
+
+     /**Marketplace Event */
+
 });
 
