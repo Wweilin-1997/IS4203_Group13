@@ -14,7 +14,7 @@ contract('Event', function(accounts){
 
     console.log("Testing Event Contract")
 
-    it('Create Event', async () => {
+    it('Create Event - Event contract deployed and Event Organizer attribute is set to deployer address', async () => {
         let eventOrganizer = await eventInstance.getEventOrganizer();
         assert.strictEqual(
             eventOrganizer,
@@ -22,8 +22,20 @@ contract('Event', function(accounts){
             "Event was not created by the right address"
          );       
     })
+
+    it('Create Tickets in Bulk for a particular Type by wrong Non Event Organizer', async () => {
+        let numberOfTicketsTobeCreated = 5
+        let eventType = "A"
+
+        await truffleAssert.reverts(
+            eventInstance.createTicketInBulk(
+                "A", eventType, 5, numberOfTicketsTobeCreated, {from: accounts[1]}
+            ),
+            "Only the event organizer can perform this action"
+       );
+    })
     
-    it('Create Tickets in Bulk for a particular Type', async () => {
+    it('Create Tickets in Bulk for a particular Type by correct EventOrganizer', async () => {
         let numberOfTicketsTobeCreated = 5
         let eventType = "A"
 
@@ -81,6 +93,17 @@ contract('Event', function(accounts){
         );
 
         await eventInstance.changeStateToSales({from: accounts[0]});
+    })
+
+    it('Create new Tickets during Non-PRESALES stage', async () => {
+        let numberOfTicketsTobeCreated = 5
+        let eventType = "B"
+        await truffleAssert.reverts(
+            eventInstance.createTicketInBulk(
+                "B", eventType, 5, numberOfTicketsTobeCreated, {from: accounts[0]}
+            ),
+            "The action is not available at this stage"
+       );
     })
 
     it('Check in ticket by Event Organizer', async () => {
