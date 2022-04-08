@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import "./Event.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-contract MarketPlace {
+contract MarketPlace is IERC721Receiver{
     //uint256 commissonFee;
     //Event eventContract;
     mapping(string => Event) events;
@@ -30,6 +31,9 @@ contract MarketPlace {
         emit eventAdded(_eventName);
     }
 
+  function onERC721Received( address operator, address from, uint256 tokenId, bytes calldata data ) public override returns (bytes4) {
+            return this.onERC721Received.selector;
+    }
     // // list and unlist functions
     // function list(
     //     string memory eventName,
