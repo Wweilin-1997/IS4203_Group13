@@ -21,6 +21,7 @@ contract Event is ERC721 {
     mapping(address => uint256) ticketCountPerOwner;
     eventStage currentStage;
     mapping(string => uint256[]) typeToTicketIds;
+    // mapping(uint256 => uint256[]) typeIdToTicketIds;
 
     enum eventStage {
         PRESALES,
@@ -28,6 +29,15 @@ contract Event is ERC721 {
         DURINGEVENT,
         POSTEVENT
     }
+
+    event ticketCreated(uint256 tokenId);
+    event ticketBoughtDuringPostEvent(uint256 tokenId);
+    event ticketBoughtDuringSales(uint256 tokenId);
+    event ticketListed(uint256 tokenId);
+    event ticketUnlisted(uint256 tokenId);
+    event ticketCheckedIn(uint256 tokenId);
+    event ticketInvalidated(uint256 tokenId);
+    event ticketValidated(uint256 tokenId);
 
     modifier requiredEventStage(eventStage stage) {
         require(
@@ -79,6 +89,7 @@ contract Event is ERC721 {
         // address _marketPlaceAddress;
         address _ticketOwner;
         string _seat;
+        uint256 _seatID;
         string _type;
         uint256 creationPrice;
         uint256 listingPrice;
@@ -114,7 +125,8 @@ contract Event is ERC721 {
     function createTicket(
         string memory _seat,
         string memory _type,
-        uint256 _creationPrice
+        uint256 _creationPrice,
+        uint256 _seatID
     )
         public
         onlyEventOrganizer
@@ -124,10 +136,11 @@ contract Event is ERC721 {
         Ticket memory newTicket = Ticket(
             address(0),
             _seat,
+            _seatID,
             _type,
             _creationPrice,
             _creationPrice, // initial listing price is the creation price
-            true,
+            false, //isListed set to false
             false,
             true
         );
@@ -135,6 +148,7 @@ contract Event is ERC721 {
         _safeMint(address(marketPlace), newTicketId);
         IDToTicket[newTicketId] = newTicket;
         typeToTicketIds[_type].push(newTicketId);
+        emit ticketCreated(newTicketId);
         return newTicketId;
     }
 
@@ -150,6 +164,7 @@ contract Event is ERC721 {
         safeTransferFrom(ticketToBuy._ticketOwner, msg.sender, tokenId);
         ticketToBuy._ticketOwner = msg.sender;
         ticketToBuy.isListed = false;
+        emit ticketBoughtDuringPostEvent(tokenId);
     }
 
     function createTicketInBulk(
@@ -159,8 +174,10 @@ contract Event is ERC721 {
         uint256 _numOfTickets
     ) public onlyEventOrganizer requiredEventStage(eventStage.PRESALES) {
         for (uint256 i = 0; i < _numOfTickets; i++) {
-            uint256 tokenId = createTicket(_seat, _type, _creationPrice);
-            listTicket(tokenId, _newListingPrice);
+             uint256 currentSeatID = i;
+
+            uint256 tokenId = createTicket(_seat, _type, currentSeatID, _creationPrice);
+            listTicket(tokenId, _creationPrice);
         }
     }
 
@@ -196,6 +213,7 @@ contract Event is ERC721 {
         // can implement returning of balance if we want.
         IDToTicket[tokenId]._ticketOwner = tx.origin;
         IDToTicket[tokenId].isListed = false;
+        emit ticketBoughtDuringSales(tokenId);
     }
 
     // only need to list ticket during sales period
@@ -203,8 +221,7 @@ contract Event is ERC721 {
     function listTicket(uint256 tokenId, uint256 _newListingPrice)
         public
         requireValidTicket(tokenId)
-        onlyTicketOwner(tokenId)
-        requiredEventStage(eventStage.SALES)
+        // requiredEventStage(eventStage.SALES)
     {
         require(
             IDToTicket[tokenId].isListed == false,
@@ -222,6 +239,7 @@ contract Event is ERC721 {
         );
 
         IDToTicket[tokenId].isListed = true;
+        emit ticketListed(tokenId);
     }
 
     function unlistTicket(uint256 tokenId)
@@ -235,6 +253,7 @@ contract Event is ERC721 {
             "Ticket is currently unlisted"
         );
         IDToTicket[tokenId].isListed = false;
+        emit ticketUnlisted(tokenId);
     }
 
     //////////////////////////////////////////////////////////
@@ -254,6 +273,7 @@ contract Event is ERC721 {
             "Ticket is already checked in"
         );
         IDToTicket[tokenId].isCheckedIn = true;
+        emit ticketCheckedIn(tokenId);
     }
 
     //////////////////////////////////////////////////////////
@@ -282,6 +302,7 @@ contract Event is ERC721 {
         );
 
         IDToTicket[tokenId].isValid = true;
+        emit ticketValidated(tokenId);
     }
 
     //////////////////////////////////////////////////////
@@ -314,4 +335,33 @@ contract Event is ERC721 {
     {
         currentStage = eventStage.POSTEVENT;
     }
+
+    function getEventOrganizer() public view returns (address) {
+        return eventOrganizer;
+    }
+
+
+    function getTicketsListForEventType(string memory _type) public view returns (uint256[] memory) {
+        return typeToTicketIds[_type];
+    }
+
+
+
+    function getTicket(uint256 id)
+        public
+        view
+        requireValidTicket(id)
+        returns (Ticket memory)
+    {
+        return IDToTicket[id];
+    }
+
+      function getCurrentTicketCount() public view returns (uint256) {
+        return ticketCountPerOwner[msg.sender];
+    }
+
+       function getCurrentEventStage() public view returns (eventStage) {
+        return currentStage;
+    }
+
 }

@@ -15,11 +15,29 @@ contract('Event', function(accounts){
     console.log("Testing Event Contract")
 
     it('Create Event', async () => {
-
+        let eventOrganizer = await eventInstance.getEventOrganizer();
+        assert.strictEqual(
+            eventOrganizer,
+            accounts[0],
+            "Event was not created by the right address"
+         );       
     })
     
     it('Create Tickets in Bulk for a particular Type', async () => {
-    
+        let numberOfTicketsTobeCreated = 5
+        let eventType = "A"
+
+        let ticketsForEvent1 = await eventInstance.createTicketInBulk(
+            "A", eventType, 5, numberOfTicketsTobeCreated, {from: accounts[0]}
+        )
+        
+        let typeToTicketIdsForEvent0 = await eventInstance.getTicketsListForEventType(eventType);
+
+        assert.strictEqual(
+            numberOfTicketsTobeCreated,
+            typeToTicketIdsForEvent0.length,
+            "Failed to create correct number of tickets"
+         );       
     })
     
     it('Transferring tickets from one user to another', async () =>{
