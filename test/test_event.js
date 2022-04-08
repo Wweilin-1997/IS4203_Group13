@@ -41,15 +41,32 @@ contract('Event', function(accounts){
     })
     
     it('Transferring tickets from one user to another', async () =>{
+        // let transferTicket = await eventInstance.tra
+    })
+
+    it('Invalidate ticket', async () => {
+        await eventInstance.invalidateTicket(0, {from: accounts[0]});
+
+        let ticketAfterUpdate = await eventInstance.getTicket(0);
+        let newValidity = ticketAfterUpdate.isValid;
+
+        assert.strictEqual(
+            newValidity,
+            false,
+            "Failed Invalidate ticket"
+        );
 
     })
 
     it('Validate ticket', async () => {
-
-    })
-
-    it('Invalidate ticket', async () => {
-
+        await eventInstance.validateTicket(0, {from: accounts[0]});
+        let ticketAfterUpdate = await eventInstance.getTicket(0);
+        let newValidity = ticketAfterUpdate.isValid;
+        assert.strictEqual(
+            newValidity,
+            true,
+            "Failed Invalidate ticket"
+        );
     })
 
     it('Check in ticket', async () => {
