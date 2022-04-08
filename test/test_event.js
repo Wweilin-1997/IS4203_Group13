@@ -27,11 +27,13 @@ contract('Event', function(accounts){
         let numberOfTicketsTobeCreated = 5
         let eventType = "A"
 
-        let ticketsForEvent1 = await eventInstance.createTicketInBulk(
+        let ticketsForEvent0 = await eventInstance.createTicketInBulk(
             "A", eventType, 5, numberOfTicketsTobeCreated, {from: accounts[0]}
         )
         
         let typeToTicketIdsForEvent0 = await eventInstance.getTicketsListForEventType(eventType);
+       
+        truffleAssert.eventEmitted(ticketsForEvent0, "ticketCreated");
 
         assert.strictEqual(
             numberOfTicketsTobeCreated,
@@ -45,11 +47,11 @@ contract('Event', function(accounts){
     })
 
     it('Invalidate ticket', async () => {
-        await eventInstance.invalidateTicket(0, {from: accounts[0]});
-
+        let invalidateTicket = await eventInstance.invalidateTicket(0, {from: accounts[0]});
         let ticketAfterUpdate = await eventInstance.getTicket(0);
         let newValidity = ticketAfterUpdate.isValid;
 
+        truffleAssert.eventEmitted(invalidateTicket, "ticketInvalidated");
         assert.strictEqual(
             newValidity,
             false,
@@ -59,9 +61,11 @@ contract('Event', function(accounts){
     })
 
     it('Validate ticket', async () => {
-        await eventInstance.validateTicket(0, {from: accounts[0]});
+        let validateTicket = await eventInstance.validateTicket(0, {from: accounts[0]});
         let ticketAfterUpdate = await eventInstance.getTicket(0);
         let newValidity = ticketAfterUpdate.isValid;
+
+        truffleAssert.eventEmitted(validateTicket, "ticketValidated");
         assert.strictEqual(
             newValidity,
             true,
@@ -69,18 +73,50 @@ contract('Event', function(accounts){
         );
     })
 
-    it('Check in ticket', async () => {
-        
+    it('Change State to SALES', async () => {
+        //check for error message if change of state performed by non event organizers
+        await truffleAssert.reverts(
+            eventInstance.changeStateToSales({from: accounts[1]}),
+            "Only the event organizer can perform this action"
+        );
+
+        await eventInstance.changeStateToSales({from: accounts[0]});
     })
 
-    it('Tickets that are checked in cannot be checked in again', async () =>{
+    it('Check in ticket by Event Organizer', async () => {
+         let checkInTicket0 = await eventInstance.checkInTicket(0, {from: accounts[0]});
+         truffleAssert.eventEmitted(checkInTicket0, "ticketCheckedIn");
 
+         let ticketAfterCheckIn = await eventInstance.getTicket(0);
+         let checkInBool = ticketAfterCheckIn.isCheckedIn;
+         assert.strictEqual(
+            checkInBool,
+            true,
+            "Failed Check In ticket"
+        );
+    })
+
+    it('Checked in ticket cannot be checked in again', async () => {
+        await truffleAssert.reverts(
+            eventInstance.checkInTicket(0, {from: accounts[0]}),
+            "Ticket is already checked in"
+        );
+    })
+
+    it('Check in ticket by Non - Event Organizer', async () => {
+        await truffleAssert.reverts(
+            eventInstance.checkInTicket(0, {from: accounts[1]}),
+            "Only the event organizer can perform this action"
+        );
     })
 
     it('Invalidated tickets cannot be checked in', async () =>{
-
+        await eventInstance.invalidateTicket(1, {from: accounts[0]});
+        let ticketAfterUpdate = await eventInstance.getTicket(1);
+        await truffleAssert.reverts(
+            eventInstance.checkInTicket(1, {from: accounts[0]}),
+            "The ticket has been invalidated"
+        );
     })
-
-
 });
 

@@ -289,6 +289,7 @@ contract Event is ERC721 {
         );
 
         IDToTicket[tokenId].isValid = false;
+        emit ticketInvalidated(tokenId);
     }
 
     function validateTicket(uint256 tokenId)
