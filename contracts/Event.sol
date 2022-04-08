@@ -13,15 +13,12 @@ contract Event is ERC721 {
     uint256 maxTicketsPerAddress;
     uint256 commissionFee;
     uint256 eventDate;
-    // mapping(uint256 => uint256) listPrice;
-    MarketPlace marketPlace; // hardcoded address of the market place
+    MarketPlace marketPlace;
     string ticketImageUrl;
     mapping(uint256 => Ticket) IDToTicket;
-    // mapping(ticketId => mapping(uint256 => address)) transactions;
     mapping(address => uint256) ticketCountPerOwner;
     eventStage currentStage;
     mapping(string => uint256[]) typeToTicketIds;
-    // mapping(uint256 => uint256[]) typeIdToTicketIds;
 
     enum eventStage {
         PRESALES,
@@ -138,7 +135,7 @@ contract Event is ERC721 {
         returns (uint256)
     {
         Ticket memory newTicket = Ticket(
-            address(0),
+            eventOrganizer,
             _seat,
             _seatID,
             _type,
@@ -164,10 +161,36 @@ contract Event is ERC721 {
     {
         Ticket memory ticketToBuy = IDToTicket[tokenId];
         require(ticketToBuy.isListed == true, "Cannot buy, Ticket not lised");
+        uint256 listedPrice = ticketToBuy.listingPrice;
+        require(
+            listedPrice + (100 + commissionFee) / 100 <= msg.value,
+            "Insufficient ETH!"
+        );
         // ticket count does not matter any more after the event
+        // transfer ticket to buyer
         safeTransferFrom(ticketToBuy._ticketOwner, msg.sender, tokenId);
+
+        // transfer money to seller
+        address payable originalOwner = payable(
+            address(uint160(ticketToBuy._ticketOwner))
+        );
+        originalOwner.transfer(listedPrice);
+
+        //transfer comission fee to event organiser
+        address payable organiser = payable(address(uint160(eventOrganizer)));
+
+        organiser.transfer((listedPrice * commissionFee) / 100);
+
+        address payable buyer = payable(address(uint160(tx.origin)));
+
+        buyer.transfer(
+            msg.value - listedPrice - ((listedPrice * commissionFee) / 100)
+        );
+
         ticketToBuy._ticketOwner = msg.sender;
         ticketToBuy.isListed = false;
+
+        marketPlace.unlistTicket(address(this), tokenId);
         emit ticketBoughtDuringPostEvent(tokenId);
     }
 
@@ -178,9 +201,14 @@ contract Event is ERC721 {
         uint256 _numOfTickets
     ) public onlyEventOrganizer requiredEventStage(eventStage.PRESALES) {
         for (uint256 i = 0; i < _numOfTickets; i++) {
-             uint256 currentSeatID = i;
+            uint256 currentSeatID = i;
 
-            uint256 tokenId = createTicket(_seat, _type, currentSeatID, _creationPrice);
+            uint256 tokenId = createTicket(
+                _seat,
+                _type,
+                currentSeatID,
+                _creationPrice
+            );
 
             listTicket(tokenId, _creationPrice);
         }
@@ -192,32 +220,45 @@ contract Event is ERC721 {
         onlyMarketPlace
         requiredEventStage(eventStage.SALES)
         requireValidTicket(tokenId)
-        addressCanPurchaseMore(msg.sender)
+        addressCanPurchaseMore(tx.origin)
     {
-        uint256 payableAmount = IDToTicket[tokenId].listingPrice;
+        Ticket memory ticket = IDToTicket[tokenId];
+        uint256 payableAmount = ticket.listingPrice;
         require(
             msg.value >= payableAmount,
             "Insufficient funds to purchase ticket"
         );
         require(IDToTicket[tokenId].isListed == true, "Ticket not listed");
 
-        uint256 amountPaid = msg.value;
+        address payable reseller = payable(
+            address(uint160(ticket._ticketOwner))
+        );
+        address payable buyer = payable(address(uint160(tx.origin)));
         // ticket was resold
-        if (IDToTicket[tokenId]._ticketOwner != address(0)) {
-            ticketCountPerOwner[IDToTicket[tokenId]._ticketOwner]--;
-            address payable reseller = payable(
-                address(uint160(IDToTicket[tokenId]._ticketOwner))
+        if (ticket._ticketOwner != eventOrganizer) {
+            ticketCountPerOwner[ticket._ticketOwner]--;
+            address payable eventOrganiser = payable(
+                address(uint160(eventOrganizer))
             );
-            uint256 resaleValAfterCommission = amountPaid - commissionFee;
-            reseller.transfer(resaleValAfterCommission);
+            reseller.transfer(payableAmount);
+            eventOrganiser.transfer((payableAmount * commissionFee) / 100);
+            buyer.transfer(
+                msg.value -
+                    payableAmount -
+                    ((payableAmount * commissionFee) / 100)
+            );
+        } else {
+            // no commission
+            reseller.transfer(payableAmount);
+            buyer.transfer(msg.value - payableAmount);
         }
 
         // tx.origin is used since the original buyer calls this function via market place contract
         ticketCountPerOwner[tx.origin]++;
 
         // can implement returning of balance if we want.
-        IDToTicket[tokenId]._ticketOwner = tx.origin;
-        IDToTicket[tokenId].isListed = false;
+        ticket._ticketOwner = tx.origin;
+        ticket.isListed = false;
         emit ticketBoughtDuringSales(tokenId);
     }
 
@@ -226,7 +267,7 @@ contract Event is ERC721 {
     function listTicket(uint256 tokenId, uint256 _newListingPrice)
         public
         requireValidTicket(tokenId)
-        // requiredEventStage(eventStage.SALES)
+    // requiredEventStage(eventStage.SALES)
     {
         require(
             IDToTicket[tokenId].isListed == false,
@@ -234,7 +275,7 @@ contract Event is ERC721 {
         );
 
         require(
-            _newListingPrice <= resaleCeiling + commissionFee,
+            _newListingPrice <= resaleCeiling,
             string(
                 abi.encodePacked(
                     "Resale price cannot be greater than ",
@@ -244,6 +285,7 @@ contract Event is ERC721 {
         );
 
         IDToTicket[tokenId].isListed = true;
+        marketPlace.listTicket(address(this), tokenId, _newListingPrice);
         emit ticketListed(tokenId);
     }
 
@@ -258,6 +300,7 @@ contract Event is ERC721 {
             "Ticket is currently unlisted"
         );
         IDToTicket[tokenId].isListed = false;
+        marketPlace.unlistTicket(address(this), tokenId);
         emit ticketUnlisted(tokenId);
     }
 
@@ -330,6 +373,10 @@ contract Event is ERC721 {
         requiredEventStage(eventStage.SALES)
     {
         currentStage = eventStage.DURINGEVENT;
+        // transfer all tickets to their original owner
+        for (uint256 i = 0; i < numTickets; i++) {
+            safeTransferFrom(address(this), IDToTicket[i]._ticketOwner, i);
+        }
     }
 
     // during event --> post event
@@ -342,36 +389,64 @@ contract Event is ERC721 {
         currentStage = eventStage.POSTEVENT;
     }
 
+    // getters
+    function getTicket(uint256 ticketId) public view returns (Ticket memory) {
+        return IDToTicket[ticketId];
+    }
+
+    function getEventName() public view returns (string memory) {
+        return eventName;
+    }
+
     function getEventOrganizer() public view returns (address) {
         return eventOrganizer;
     }
 
+    function getLocation() public view returns (string memory) {
+        return location;
+    }
 
-    function getTicketsListForEventType(string memory _type) public view returns (uint256[] memory) {
+    function getCompany() public view returns (string memory) {
+        return company;
+    }
+
+    function getTotalTickets() public view returns (uint256) {
+        return numTickets;
+    }
+
+    function getMaxTicksPerAddress() public view returns (uint256) {
+        return maxTicketsPerAddress;
+    }
+
+    function getComissionFee() public view returns (uint256) {
+        return commissionFee;
+    }
+
+    function getEventDate() public view returns (uint256) {
+        return eventDate;
+    }
+
+    function getTicketImageUrl() public view returns (string memory) {
+        return ticketImageUrl;
+    }
+
+    function getTicketsListForEventType(string memory _type)
+        public
+        view
+        returns (uint256[] memory)
+    {
         return typeToTicketIds[_type];
     }
 
-
-
-    function getTicket(uint256 id)
-        public
-        view
-        requireValidTicket(id)
-        returns (Ticket memory)
-    {
-        return IDToTicket[id];
-    }
-
-      function getCurrentTicketCount() public view returns (uint256) {
+    function getCurrentTicketCount() public view returns (uint256) {
         return ticketCountPerOwner[msg.sender];
     }
 
-       function getCurrentEventStage() public view returns (eventStage) {
+    function getCurrentEventStage() public view returns (eventStage) {
         return currentStage;
     }
 
     function getEventContractAddress() public view returns (address) {
         return address(this);
     }
-
 }
