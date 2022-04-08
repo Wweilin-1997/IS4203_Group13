@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import "./Event.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-contract MarketPlace {
+contract MarketPlace is IERC721Receiver {
+    //uint256 commissonFee;
+    //Event eventContract;
     mapping(string => Event) events;
-    mapping(string => mapping(uint256 => uint256)) prices;
+    mapping(string => mapping(uint256 => uint256)) private prices;
+    
     // there will be 3 tiers, average 3 dollars per point
-    // every 1 eth spend = 1000 points , 1 point = 3000000000000000 wei
-    // 
-    // bronze tier = 0 - 200 points => normal commission
-    // silver >200-500 =>  3%
-    //gold 500 > 1%
+    // every 1 eth spend = 1000 points , 1 point = 1000000000000000 wei
+    // bronze tier = 0 - 600 points => normal commission
+    // silver >600-1500 =>  3%
+    //gold 1500 > 1%
     mapping(address => uint256) points;
 
     address _owner = msg.sender;
@@ -36,21 +39,24 @@ contract MarketPlace {
         // same require event exists
         uint256 userPoints = points[msg.sender];
         uint256 listedPrice = prices[eventName][tokenId];
+
         uint256 commissionFee = 5;
         if (userPoints > 500) {
             commissionFee = 1;
         } else if (userPoints > 200) {
             commissionFee = 3;
         }
-
         require(
             msg.value >= listedPrice * (commissionFee + 100 / 100),
             "Insufficient funds to purchase ticket"
         );
+
         Event listedEvent = events[eventName];
         listedEvent.buyTicketsDuringSales(tokenId);
+
         address payable owner = payable(address(uint160(_owner)));
         owner.transfer(listedPrice * commissionFee);
+
         points[msg.sender] += (listedPrice / 3000000000000000);
         unlistTicket(eventName, tokenId);
     }
@@ -80,6 +86,9 @@ contract MarketPlace {
         return prices[eventName][tokenId];
     }
 
+  function onERC721Received( address operator, address from, uint256 tokenId, bytes calldata data ) public override returns (bytes4) {
+            return this.onERC721Received.selector;
+    }
     // // list and unlist functions
     // function list(
     //     string memory eventName,

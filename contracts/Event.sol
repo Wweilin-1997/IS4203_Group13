@@ -14,11 +14,9 @@ contract Event is ERC721 {
     uint256 maxTicketsPerAddress;
     uint256 commissionFee;
     uint256 eventDate;
-    // mapping(uint256 => uint256) listPrice;
-    MarketPlace marketPlace; // hardcoded address of the market place
+    MarketPlace marketPlace; 
     string ticketImageUrl;
     mapping(uint256 => Ticket) IDToTicket;
-    // mapping(ticketId => mapping(uint256 => address)) transactions;
     mapping(address => uint256) ticketCountPerOwner;
     eventStage currentStage;
     mapping(string => uint256[]) typeToTicketIds;
@@ -89,6 +87,7 @@ contract Event is ERC721 {
         // address _marketPlaceAddress;
         address _ticketOwner;
         string _seat;
+        uint256 _seatID;
         string _type;
         uint256 creationPrice;
         uint256 listingPrice;
@@ -124,7 +123,8 @@ contract Event is ERC721 {
     function createTicket(
         string memory _seat,
         string memory _type,
-        uint256 _creationPrice
+        uint256 _creationPrice,
+        uint256 _seatID
     )
         public
         onlyEventOrganizer
@@ -134,10 +134,11 @@ contract Event is ERC721 {
         Ticket memory newTicket = Ticket(
             address(0),
             _seat,
+            _seatID,
             _type,
             _creationPrice,
             _creationPrice, // initial listing price is the creation price
-            true,
+            false, //isListed set to false
             false,
             true
         );
@@ -171,7 +172,10 @@ contract Event is ERC721 {
         uint256 _numOfTickets
     ) public onlyEventOrganizer requiredEventStage(eventStage.PRESALES) {
         for (uint256 i = 0; i < _numOfTickets; i++) {
-            uint256 tokenId = createTicket(_seat, _type, _creationPrice);
+             uint256 currentSeatID = i;
+
+            uint256 tokenId = createTicket(_seat, _type, currentSeatID, _creationPrice);
+
             listTicket(tokenId, _creationPrice);
         }
     }
@@ -216,8 +220,7 @@ contract Event is ERC721 {
     function listTicket(uint256 tokenId, uint256 _newListingPrice)
         public
         requireValidTicket(tokenId)
-        onlyTicketOwner(tokenId)
-        requiredEventStage(eventStage.SALES)
+        // requiredEventStage(eventStage.SALES)
     {
         require(
             IDToTicket[tokenId].isListed == false,
@@ -287,6 +290,7 @@ contract Event is ERC721 {
         );
 
         IDToTicket[tokenId].isValid = false;
+        emit ticketInvalidated(tokenId);
     }
 
     function validateTicket(uint256 tokenId)
@@ -374,8 +378,16 @@ contract Event is ERC721 {
         return ticketImageUrl;
     }
 
-    function getCurrentTicketCount() public view returns (uint256) {
+    function getTicketsListForEventType(string memory _type) public view returns (uint256[] memory) {
+        return typeToTicketIds[_type];
+    }
+
+      function getCurrentTicketCount() public view returns (uint256) {
         return ticketCountPerOwner[msg.sender];
+    }
+
+       function getCurrentEventStage() public view returns (eventStage) {
+        return currentStage;
     }
 
 }
