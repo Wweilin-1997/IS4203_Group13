@@ -177,6 +177,7 @@ contract Event is ERC721 {
              uint256 currentSeatID = i;
 
             uint256 tokenId = createTicket(_seat, _type, currentSeatID, _creationPrice);
+
             listTicket(tokenId, _creationPrice);
         }
     }
