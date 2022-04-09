@@ -154,19 +154,91 @@ contract("Event", function (accounts) {
     );
   });
 
-  /**Marketplace Event */
-  it("Purchase tickets during initial sales", async () => {
-    let ticket = await eventInstance.getTicket(2);
-    let eventAddress0 = await eventInstance.getEventContractAddress();
+    /**Marketplace Event */
+    it("Purchase tickets during initial sales", async () => {
+        let eventAddress0 = await eventInstance.getEventContractAddress();
 
-    //console.log(eventAddress0);
-    let purcahse = await marketplaceInstance.buy(eventAddress0, 2, {
-      from: accounts[2],
-      value: Number(BigInt(5250000000000000000)),
+        //console.log(eventAddress0);
+        let purcahse = await marketplaceInstance.buy(eventAddress0, 2, {
+            from: accounts[2],
+            value: Number(BigInt(5250000000000000000)),
+        });
+        let ticket = await eventInstance.getTicket(2);
+        let ticketOwner = ticket._ticketOwner;
+        let ticketCount = await eventInstance.getCurrentTicketCount(ticketOwner);
+        truffleAssert.eventEmitted(purcahse, "ticketBoughtDuringSales");
+        assert.strictEqual(ticketOwner, accounts[2], "Failed purchase initial ticket sale");
     });
-    let ticketOwner = ticket._ticketOwner;
-    console.log(ticketOwner);
-    //truffleAssert.eventEmitted(purcahse, "ticketBoughtDuringSales");
-    assert.strictEqual(ticketOwner, accounts[2], "Failed purchase initial ticket sale");
-  });
+
+    it('Purchase tickets cannot exceed max number specified by Event Organiser', async () => {
+        let eventAddress0 = await eventInstance.getEventContractAddress();
+        let purcahseOne = await marketplaceInstance.buy(eventAddress0, 3, {
+            from: accounts[2],
+            value: Number(BigInt(5250000000000000000)),
+        });
+        await truffleAssert.reverts(
+            marketplaceInstance.buy(eventAddress0, 4, { from: accounts[2], value: Number(BigInt(5250000000000000000)) }),
+            "Buyer already reached the max limit"
+        );
+    });
+
+    it('Listing ticket must be lower then the Max Resale Value + Commission Fee', async () => {
+        let eventAddress0 = await eventInstance.getEventContractAddress();
+        let resaleCeiling = await eventInstance.resaleCeiling;
+
+        await truffleAssert.reverts(
+            eventInstance.listTicket(2, 7000000000000000000n),
+            "Resale price cannot be greater than ceiling"
+        );
+    });
+
+    it('Listing Ticket', async () => {
+        let eventAddress0 = await eventInstance.getEventContractAddress();
+        let listEvent = await eventInstance.listTicket(2, 50100000000000000n);
+
+        let ticketAfterListing = await eventInstance.getTicket(2);
+        let TicketisListed = ticketAfterListing.isListed;
+
+        assert.strictEqual(
+            TicketisListed,
+            true,
+            "Failed to list ticket for sale"
+        );
+    });
+
+    it('upgrade account', async () => {
+        let upgrade = await marketplaceInstance.upgradeAccountToGold(accounts[3]);
+        let points = await marketplaceInstance.getAccountPoints(accounts[3]);
+        //console.log(points.toNumber());
+        assert.strictEqual(
+            points.toNumber(),
+            1501,
+            "Failed to upgrade account"
+        );
+    });
+
+    it('Purchase tickets with gold account', async () => {
+        let eventAddress0 = await eventInstance.getEventContractAddress();
+        //console.log(eventAddress0);
+        let purcahse = await marketplaceInstance.buy(eventAddress0, 4, {
+            from: accounts[3],
+            value: Number(BigInt(5050000000000000000)),
+        });
+        let ticket = await eventInstance.getTicket(4);
+        let ticketOwner = ticket._ticketOwner;
+        //truffleAssert.eventEmitted(purcahse, "ticketBoughtDuringSales");
+        assert.strictEqual(
+            ticketOwner,
+            accounts[3],
+            "Failed purchase ticket"
+        );
+    });
+
+    it('Change State to DURING', async () => {
+        await eventInstance.changeStateToDuring({ from: accounts[0] });
+    });
+
+    it('Change State to POSTEVENt', async () => {
+        await eventInstance.changeStateToPostEvent({ from: accounts[0] });
+    });
 });

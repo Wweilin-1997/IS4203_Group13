@@ -7,7 +7,7 @@ module.exports = (deployer, network, accounts) => {
         await deployer.deploy(MarketPlace);
         // event 1 is for test event
         await deployer.deploy(Event1, "event1", 
-        "event1", "event1", "company1", 30, 3, 5, MarketPlace.address, {from: accounts[0]});
+        "event1", "event1", "company1", 30, 2, 5, MarketPlace.address, {from: accounts[0]});
 
         // await deployer.deploy(Event2, "event1", 
         // "event1", "event1", "company1", 150, 3, 5, MarketPlace.address, {from: accounts[1]});

@@ -108,4 +108,17 @@ contract MarketPlace is IERC721Receiver {
     ) public pure override returns (bytes4) {
         return this.onERC721Received.selector;
     }
+
+    // for demo purpose
+    function upgradeAccountToGold(address account) public {
+        points[account] = 1501;
+    }
+
+    function getAccountPoints(address accountAddress)
+        public
+        view
+        returns (uint256)
+    {
+        return points[accountAddress];
+    }
 }

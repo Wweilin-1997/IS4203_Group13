@@ -12,10 +12,10 @@ contract('MarketPlace', function(accounts){
         MarketPlaceInstance = await MarketPlace.deployed();
     });
     
-    console.log("Testing Market Place Contract");
+    //console.log("Testing Market Place Contract");
 
     
-    it('Purchase tickets during initial sales', async () =>{
+    //it('Purchase tickets during initial sales', async () =>{
         //let eventAddress0 = await eventInstance.getEventContractAddress();
         //console.log(eventAddress0)
 
@@ -29,7 +29,7 @@ contract('MarketPlace', function(accounts){
         //let createTickets = await eventInstance.createTicketInBulk("A", "VIP", 100, 10, {from: accounts[0]});
         //let purcahse = await eventInstance.buyTicketsDuringSales(1, {from: accounts[2], value: 100});
 
-    })
+    //})
     /*
     it('Purchase tickets cannot exceed max number specified by Event Organiser', async () =>{
 

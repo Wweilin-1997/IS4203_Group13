@@ -163,7 +163,7 @@ contract Event is ERC721 {
         require(ticketToBuy.isListed == true, "Cannot buy, Ticket not lised");
         uint256 listedPrice = ticketToBuy.listingPrice;
         require(
-            listedPrice + (100 + commissionFee) / 100 <= msg.value,
+            listedPrice * (100 + commissionFee) / 100 <= msg.value,
             "Insufficient ETH!"
         );
         // ticket count does not matter any more after the event
@@ -215,7 +215,7 @@ contract Event is ERC721 {
         requireValidTicket(tokenId)
         addressCanPurchaseMore(tx.origin)
     {
-        Ticket memory ticket = IDToTicket[tokenId];
+        Ticket storage ticket = IDToTicket[tokenId];
         uint256 payableAmount = ticket.listingPrice;
         require(
             msg.value >= payableAmount,
