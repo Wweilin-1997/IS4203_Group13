@@ -61,7 +61,7 @@ contract MarketPlace is IERC721Receiver {
         );
 
         Event listedEvent = events[eventAddress];
-        listedEvent.buyTicketsDuringSales(tokenId);
+        listedEvent.buyTicketsDuringSales{value:msg.value}(tokenId);
 
         address payable owner = payable(address(uint160(_owner)));
         owner.transfer(listedPrice * commissionFee);
