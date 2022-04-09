@@ -17,10 +17,10 @@ contract Event is ERC721 {
     string ticketImageUrl;
     mapping(uint256 => Ticket) IDToTicket;
     mapping(address => uint256) ticketCountPerOwner;
-    eventStage currentStage;
+    EventStage currentStage;
     mapping(string => uint256[]) typeToTicketIds;
 
-    enum eventStage {
+    enum EventStage {
         PRESALES,
         SALES,
         DURINGEVENT,
@@ -29,14 +29,14 @@ contract Event is ERC721 {
 
     event ticketCreated(uint256 tokenId);
     event ticketBoughtDuringPostEvent(uint256 tokenId);
-    event ticketBoughtDuringSales(uint256 tokenId);
+    event ticketBoughtDuringSales(uint256 tokenId, address newOwner);
     event ticketListed(uint256 tokenId);
     event ticketUnlisted(uint256 tokenId);
     event ticketCheckedIn(uint256 tokenId);
     event ticketInvalidated(uint256 tokenId);
     event ticketValidated(uint256 tokenId);
 
-    modifier requiredEventStage(eventStage stage) {
+    modifier requiredEventStage(EventStage stage) {
         require(
             stage == currentStage,
             "The action is not available at this stage"
@@ -83,7 +83,6 @@ contract Event is ERC721 {
     }
 
     struct Ticket {
-        // address _marketPlaceAddress;
         address _ticketOwner;
         string _seat;
         uint256 _seatID;
@@ -115,7 +114,7 @@ contract Event is ERC721 {
         maxTicketsPerAddress = _maxTicketsPerAddress;
         commissionFee = _commissionFee;
         //eventDate = _eventDate;
-        currentStage = eventStage.PRESALES;
+        currentStage = EventStage.PRESALES;
         marketPlace = _marketPlace;
     }
 
@@ -131,7 +130,7 @@ contract Event is ERC721 {
     )
         public
         onlyEventOrganizer
-        requiredEventStage(eventStage.PRESALES)
+        requiredEventStage(EventStage.PRESALES)
         returns (uint256)
     {
         Ticket memory newTicket = Ticket(
@@ -149,6 +148,7 @@ contract Event is ERC721 {
         _safeMint(address(marketPlace), newTicketId);
         IDToTicket[newTicketId] = newTicket;
         typeToTicketIds[_type].push(newTicketId);
+        listTicket(newTicketId, _creationPrice);
         emit ticketCreated(newTicketId);
         return newTicketId;
     }
@@ -157,7 +157,7 @@ contract Event is ERC721 {
         public
         payable
         requireValidTicket(tokenId)
-        requiredEventStage(eventStage.POSTEVENT)
+        requiredEventStage(EventStage.POSTEVENT)
     {
         Ticket memory ticketToBuy = IDToTicket[tokenId];
         require(ticketToBuy.isListed == true, "Cannot buy, Ticket not lised");
@@ -199,18 +199,11 @@ contract Event is ERC721 {
         string memory _type,
         uint256 _creationPrice,
         uint256 _numOfTickets
-    ) public onlyEventOrganizer requiredEventStage(eventStage.PRESALES) {
+    ) public onlyEventOrganizer requiredEventStage(EventStage.PRESALES) {
         for (uint256 i = 0; i < _numOfTickets; i++) {
             uint256 currentSeatID = i;
 
-            uint256 tokenId = createTicket(
-                _seat,
-                _type,
-                currentSeatID,
-                _creationPrice
-            );
-
-            listTicket(tokenId, _creationPrice);
+            createTicket(_seat, _type, _creationPrice, currentSeatID);
         }
     }
 
@@ -218,7 +211,7 @@ contract Event is ERC721 {
         public
         payable
         onlyMarketPlace
-        requiredEventStage(eventStage.SALES)
+        requiredEventStage(EventStage.SALES)
         requireValidTicket(tokenId)
         addressCanPurchaseMore(tx.origin)
     {
@@ -259,7 +252,7 @@ contract Event is ERC721 {
         // can implement returning of balance if we want.
         ticket._ticketOwner = tx.origin;
         ticket.isListed = false;
-        emit ticketBoughtDuringSales(tokenId);
+        emit ticketBoughtDuringSales(tokenId, tx.origin);
     }
 
     // only need to list ticket during sales period
@@ -267,15 +260,17 @@ contract Event is ERC721 {
     function listTicket(uint256 tokenId, uint256 _newListingPrice)
         public
         requireValidTicket(tokenId)
-    // requiredEventStage(eventStage.SALES)
+    // requiredEventStage(EventStage.SALES)
     {
         require(
             IDToTicket[tokenId].isListed == false,
             "Ticket is currently listed"
         );
 
+        uint256 creationPrice = IDToTicket[tokenId].creationPrice;
+
         require(
-            _newListingPrice <= resaleCeiling,
+            _newListingPrice <= creationPrice * (resaleCeiling + 100 / 100),
             string(
                 abi.encodePacked(
                     "Resale price cannot be greater than ",
@@ -293,7 +288,7 @@ contract Event is ERC721 {
         public
         requireValidTicket(tokenId)
         onlyTicketOwner(tokenId)
-        requiredEventStage(eventStage.SALES)
+        requiredEventStage(EventStage.SALES)
     {
         require(
             IDToTicket[tokenId].isListed == true,
@@ -310,7 +305,7 @@ contract Event is ERC721 {
         public
         onlyEventOrganizer
         requireValidTicket(tokenId)
-        requiredEventStage(eventStage.SALES)
+        requiredEventStage(EventStage.SALES)
     {
         require(
             IDToTicket[tokenId].isValid == true,
@@ -361,18 +356,18 @@ contract Event is ERC721 {
     function changeStateToSales()
         public
         onlyEventOrganizer
-        requiredEventStage(eventStage.PRESALES)
+        requiredEventStage(EventStage.PRESALES)
     {
-        currentStage = eventStage.SALES;
+        currentStage = EventStage.SALES;
     }
 
     // sales --> during event
     function changeStateToDuring()
         public
         onlyEventOrganizer
-        requiredEventStage(eventStage.SALES)
+        requiredEventStage(EventStage.SALES)
     {
-        currentStage = eventStage.DURINGEVENT;
+        currentStage = EventStage.DURINGEVENT;
         // transfer all tickets to their original owner
         for (uint256 i = 0; i < numTickets; i++) {
             safeTransferFrom(address(this), IDToTicket[i]._ticketOwner, i);
@@ -384,9 +379,9 @@ contract Event is ERC721 {
     function changeStateToPostEvent()
         public
         onlyEventOrganizer
-        requiredEventStage(eventStage.DURINGEVENT)
+        requiredEventStage(EventStage.DURINGEVENT)
     {
-        currentStage = eventStage.POSTEVENT;
+        currentStage = EventStage.POSTEVENT;
     }
 
     // getters
@@ -442,7 +437,7 @@ contract Event is ERC721 {
         return ticketCountPerOwner[msg.sender];
     }
 
-    function getCurrentEventStage() public view returns (eventStage) {
+    function getCurrentEventStage() public view returns (EventStage) {
         return currentStage;
     }
 

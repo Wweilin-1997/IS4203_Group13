@@ -32,6 +32,7 @@ contract MarketPlace is IERC721Receiver {
     constructor() {}
 
     event eventAdded(address eventContractAddress);
+    event newTicketListed(uint256 tokenId, uint256 price);
 
     function addEvent(address eventContractAddress) public {
         // require(
@@ -61,12 +62,15 @@ contract MarketPlace is IERC721Receiver {
         );
 
         Event listedEvent = events[eventAddress];
-        listedEvent.buyTicketsDuringSales{value:msg.value}(tokenId);
+        if (listedEvent.getCurrentEventStage() == Event.EventStage.SALES) {
+            listedEvent.buyTicketsDuringSales{value: msg.value}(tokenId);
+        } else if (
+            listedEvent.getCurrentEventStage() == Event.EventStage.POSTEVENT
+        ) {
+            listedEvent.buyTicketsDuringPostEvent{value: msg.value}(tokenId);
+        }
 
-        address payable owner = payable(address(uint160(_owner)));
-        owner.transfer(listedPrice * commissionFee);
-
-        points[msg.sender] += (listedPrice / 3000000000000000);
+        points[msg.sender] += (listedPrice / 1000000000000000);
         unlistTicket(eventAddress, tokenId);
     }
 
@@ -76,6 +80,7 @@ contract MarketPlace is IERC721Receiver {
         uint256 listedPrice
     ) public {
         prices[eventAddress][tokenId] = listedPrice;
+        emit newTicketListed(tokenId, listedPrice);
     }
 
     function unlistTicket(address eventAddress, uint256 tokenId) public {
@@ -103,42 +108,4 @@ contract MarketPlace is IERC721Receiver {
     ) public pure override returns (bytes4) {
         return this.onERC721Received.selector;
     }
-    // // list and unlist functions
-    // function list(
-    //     string memory eventName,
-    //     uint256 tokenId,
-    //     uint256 price
-    // ) public {
-    //     Event listedEvent = events[eventName];
-    //     /*
-    // require(
-    //   events[eventName] != null,
-    //   "event does not exits"
-    // );
-    // */
-    //     prices[eventName][tokenId] = price;
-    //     listedEvent.listTicket(tokenId);
-    // }
-
-    // function unlist(string memory eventName, uint256 tokenId) public {
-    //     Event listedEvent = events[eventName];
-    //     /*
-    // require(
-    //   events[eventName] != null,
-    //   "event does not exits"
-    // );
-    // */
-    //     prices[eventName][tokenId] = 0;
-    //     listedEvent.unlistTicket(tokenId);
-    // }
-
-    // // check price
-    // function checkPrice(string memory eventName, uint256 tokenId)
-    //     public
-    //     view
-    //     returns (uint256)
-    // {
-    //     // same require event exists
-    //     return prices[eventName][tokenId];
-    // }
 }
