@@ -271,12 +271,7 @@ contract Event is ERC721 {
 
         require(
             _newListingPrice <= creationPrice * (resaleCeiling + 100 / 100),
-            string(
-                abi.encodePacked(
-                    "Resale price cannot be greater than ",
-                    resaleCeiling
-                )
-            )
+            "Resale price cannot be greater than ceiling"
         );
 
         IDToTicket[tokenId].isListed = true;
@@ -433,8 +428,8 @@ contract Event is ERC721 {
         return typeToTicketIds[_type];
     }
 
-    function getCurrentTicketCount() public view returns (uint256) {
-        return ticketCountPerOwner[msg.sender];
+    function getCurrentTicketCount(address countAddress) public view returns (uint256) {
+        return ticketCountPerOwner[countAddress];
     }
 
     function getCurrentEventStage() public view returns (EventStage) {
