@@ -19,13 +19,26 @@ contract("Event", function (accounts) {
 
   it("Create Event - Event contract deployed and Event Organizer attribute is set to deployer address", async () => {
     let eventOrganizer = await eventInstance.getEventOrganizer();
-    assert.strictEqual(eventOrganizer, accounts[0], "Event was not created by the right address");
+    assert.strictEqual(
+      eventOrganizer,
+      accounts[0],
+      "Event was not created by the right address"
+    );
   });
 
   it("Add Event to Marketplace", async () => {
     //let eventAddress0 = await eventInstance.getEventContractAddress();
     //console.log(eventAddress0);
     await eventInstance.addEventToMarketplace();
+
+    let event = await marketplaceInstance.getEvent(eventInstance.address);
+    // console.log("event instance: " + eventInstance.address);
+    // console.log("event: " + event);
+    assert.strictEqual(
+      event,
+      eventInstance.address,
+      "address are not the same"
+    );
   });
 
   it("Create Tickets in Bulk for a particular Type by wrong Non Event Organizer", async () => {
@@ -61,7 +74,8 @@ contract("Event", function (accounts) {
     // let listedPrice = await marketplaceInstance.getTicketPrice(eventInstance, 2);
     // console.log(listedPrice);
 
-    let typeToTicketIdsForEvent0 = await eventInstance.getTicketsListForEventType(eventType);
+    let typeToTicketIdsForEvent0 =
+      await eventInstance.getTicketsListForEventType(eventType);
     // console.log(typeToTicketIdsForEvent0)
 
     truffleAssert.eventEmitted(ticketsForEvent0, "ticketCreated");
@@ -78,7 +92,9 @@ contract("Event", function (accounts) {
   });
 
   it("Invalidate ticket", async () => {
-    let invalidateTicket = await eventInstance.invalidateTicket(0, { from: accounts[0] });
+    let invalidateTicket = await eventInstance.invalidateTicket(0, {
+      from: accounts[0],
+    });
     let ticketAfterUpdate = await eventInstance.getTicket(0);
     let newValidity = ticketAfterUpdate.isValid;
 
@@ -87,7 +103,9 @@ contract("Event", function (accounts) {
   });
 
   it("Validate ticket", async () => {
-    let validateTicket = await eventInstance.validateTicket(0, { from: accounts[0] });
+    let validateTicket = await eventInstance.validateTicket(0, {
+      from: accounts[0],
+    });
     let ticketAfterUpdate = await eventInstance.getTicket(0);
     let newValidity = ticketAfterUpdate.isValid;
 
@@ -123,7 +141,9 @@ contract("Event", function (accounts) {
   });
 
   it("Check in ticket by Event Organizer", async () => {
-    let checkInTicket0 = await eventInstance.checkInTicket(0, { from: accounts[0] });
+    let checkInTicket0 = await eventInstance.checkInTicket(0, {
+      from: accounts[0],
+    });
     truffleAssert.eventEmitted(checkInTicket0, "ticketCheckedIn");
 
     let ticketAfterCheckIn = await eventInstance.getTicket(0);
@@ -154,87 +174,82 @@ contract("Event", function (accounts) {
     );
   });
 
-    /**Marketplace Event */
-    it("Purchase tickets during initial sales", async () => {
-        let eventAddress0 = await eventInstance.getEventContractAddress();
+  /**Marketplace Event */
+  it("Purchase tickets during initial sales", async () => {
+    let eventAddress0 = await eventInstance.getEventContractAddress();
 
-        //console.log(eventAddress0);
-        let purcahse = await marketplaceInstance.buy(eventAddress0, 2, {
-            from: accounts[2],
-            value: Number(BigInt(5250000000000000000)),
-        });
-        let ticket = await eventInstance.getTicket(2);
-        let ticketOwner = ticket._ticketOwner;
-        let ticketCount = await eventInstance.getCurrentTicketCount(ticketOwner);
-        //truffleAssert.eventEmitted(purcahse, "ticketBoughtDuringSales");
-        assert.strictEqual(ticketOwner, accounts[2], "Failed purchase initial ticket sale");
+    //console.log(eventAddress0);
+    let purcahse = await marketplaceInstance.buy(eventAddress0, 2, {
+      from: accounts[2],
+      value: Number(BigInt(5250000000000000000)),
     });
+    let ticket = await eventInstance.getTicket(2);
+    let ticketOwner = ticket._ticketOwner;
+    let ticketCount = await eventInstance.getCurrentTicketCount(ticketOwner);
+    //truffleAssert.eventEmitted(purcahse, "ticketBoughtDuringSales");
+    assert.strictEqual(
+      ticketOwner,
+      accounts[2],
+      "Failed purchase initial ticket sale"
+    );
+  });
 
-    it('Purchase tickets cannot exceed max number specified by Event Organiser', async () => {
-        let eventAddress0 = await eventInstance.getEventContractAddress();
-        let purcahseOne = await marketplaceInstance.buy(eventAddress0, 3, {
-            from: accounts[2],
-            value: Number(BigInt(5250000000000000000)),
-        });
-        await truffleAssert.reverts(
-            marketplaceInstance.buy(eventAddress0, 4, { from: accounts[2], value: Number(BigInt(5250000000000000000)) }),
-            "Buyer already reached the max limit"
-        );
+  it("Purchase tickets cannot exceed max number specified by Event Organiser", async () => {
+    let eventAddress0 = await eventInstance.getEventContractAddress();
+    let purcahseOne = await marketplaceInstance.buy(eventAddress0, 3, {
+      from: accounts[2],
+      value: Number(BigInt(5250000000000000000)),
     });
+    await truffleAssert.reverts(
+      marketplaceInstance.buy(eventAddress0, 4, {
+        from: accounts[2],
+        value: Number(BigInt(5250000000000000000)),
+      }),
+      "Buyer already reached the max limit"
+    );
+  });
 
-    it('Listing ticket must be lower then the Max Resale Value + Commission Fee', async () => {
-        let eventAddress0 = await eventInstance.getEventContractAddress();
-        let resaleCeiling = await eventInstance.resaleCeiling;
+  it("Listing ticket must be lower then the Max Resale Value + Commission Fee", async () => {
+    let eventAddress0 = await eventInstance.getEventContractAddress();
+    let resaleCeiling = await eventInstance.resaleCeiling;
 
-        await truffleAssert.reverts(
-            eventInstance.listTicket(2, 7000000000000000000n),
-            "Resale price cannot be greater than ceiling"
-        );
+    await truffleAssert.reverts(
+      eventInstance.listTicket(2, 7000000000000000000n),
+      "Resale price cannot be greater than ceiling"
+    );
+  });
+
+  it("Listing Ticket", async () => {
+    let eventAddress0 = await eventInstance.getEventContractAddress();
+    let listEvent = await eventInstance.listTicket(2, 50000000000000000n);
+
+    let ticketAfterListing = await eventInstance.getTicket(2);
+    let TicketisListed = ticketAfterListing.isListed;
+
+    assert.strictEqual(TicketisListed, true, "Failed to list ticket for sale");
+  });
+
+  it("upgrade account", async () => {
+    let upgrade = await marketplaceInstance.upgradeAccountToGold(accounts[3]);
+    let points = await marketplaceInstance.getAccountPoints(accounts[3]);
+    //console.log(points.toNumber());
+    assert.strictEqual(points.toNumber(), 1501, "Failed to upgrade account");
+  });
+
+  it("Purchase tickets with gold account", async () => {
+    let eventAddress0 = await eventInstance.getEventContractAddress();
+    //console.log(eventAddress0);
+    let purcahse = await marketplaceInstance.buy(eventAddress0, 4, {
+      from: accounts[3],
+      value: Number(BigInt(5050000000000000000)),
     });
+    let ticket = await eventInstance.getTicket(4);
+    let ticketOwner = ticket._ticketOwner;
+    //truffleAssert.eventEmitted(purcahse, "ticketBoughtDuringSales");
+    assert.strictEqual(ticketOwner, accounts[3], "Failed purchase ticket");
+  });
 
-    it('Listing Ticket', async () => {
-        let eventAddress0 = await eventInstance.getEventContractAddress();
-        let listEvent = await eventInstance.listTicket(2, 50100000000000000n);
-
-        let ticketAfterListing = await eventInstance.getTicket(2);
-        let TicketisListed = ticketAfterListing.isListed;
-
-        assert.strictEqual(
-            TicketisListed,
-            true,
-            "Failed to list ticket for sale"
-        );
-    });
-
-    it('upgrade account', async () => {
-        let upgrade = await marketplaceInstance.upgradeAccountToGold(accounts[3]);
-        let points = await marketplaceInstance.getAccountPoints(accounts[3]);
-        //console.log(points.toNumber());
-        assert.strictEqual(
-            points.toNumber(),
-            1501,
-            "Failed to upgrade account"
-        );
-    });
-
-    it('Purchase tickets with gold account', async () => {
-        let eventAddress0 = await eventInstance.getEventContractAddress();
-        //console.log(eventAddress0);
-        let purcahse = await marketplaceInstance.buy(eventAddress0, 4, {
-            from: accounts[3],
-            value: Number(BigInt(5050000000000000000)),
-        });
-        let ticket = await eventInstance.getTicket(4);
-        let ticketOwner = ticket._ticketOwner;
-        //truffleAssert.eventEmitted(purcahse, "ticketBoughtDuringSales");
-        assert.strictEqual(
-            ticketOwner,
-            accounts[3],
-            "Failed purchase ticket"
-        );
-    });
-
-    /*
+  /*
     it('Change State to DURING', async () => {
         await eventInstance.changeStateToDuring({ from: accounts[0] });
     });

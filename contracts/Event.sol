@@ -163,7 +163,7 @@ contract Event is ERC721 {
         require(ticketToBuy.isListed == true, "Cannot buy, Ticket not lised");
         uint256 listedPrice = ticketToBuy.listingPrice;
         require(
-            listedPrice * (100 + commissionFee) / 100 <= msg.value,
+            (listedPrice * (100 + commissionFee)) / 100 <= msg.value,
             "Insufficient ETH!"
         );
         // ticket count does not matter any more after the event
@@ -260,7 +260,6 @@ contract Event is ERC721 {
     function listTicket(uint256 tokenId, uint256 _newListingPrice)
         public
         requireValidTicket(tokenId)
-    // requiredEventStage(EventStage.SALES)
     {
         require(
             IDToTicket[tokenId].isListed == false,
@@ -270,10 +269,12 @@ contract Event is ERC721 {
         uint256 creationPrice = IDToTicket[tokenId].creationPrice;
 
         require(
-            _newListingPrice <= creationPrice * (resaleCeiling + 100 / 100),
+            _newListingPrice <=
+                (creationPrice * ((resaleCeiling + 100) / 100)) + commissionFee,
             "Resale price cannot be greater than ceiling"
         );
 
+        IDToTicket[tokenId].listingPrice = _newListingPrice;
         IDToTicket[tokenId].isListed = true;
         marketPlace.listTicket(address(this), tokenId, _newListingPrice);
         emit ticketListed(tokenId);
@@ -428,7 +429,11 @@ contract Event is ERC721 {
         return typeToTicketIds[_type];
     }
 
-    function getCurrentTicketCount(address countAddress) public view returns (uint256) {
+    function getCurrentTicketCount(address countAddress)
+        public
+        view
+        returns (uint256)
+    {
         return ticketCountPerOwner[countAddress];
     }
 
