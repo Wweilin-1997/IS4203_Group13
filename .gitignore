@@ -1,4 +1,3 @@
-sol
 *.o
 stdout
 .submodule_stamp
@@ -7,6 +6,6 @@ stdout
 gclog.txt
 gcstat.txt
 iss*
-*.sol
-_build
+build
 doxyxml
+node_modules
