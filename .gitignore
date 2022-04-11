@@ -1,0 +1,12 @@
+sol
+*.o
+stdout
+.submodule_stamp
+*.orig
+*.sw?
+gclog.txt
+gcstat.txt
+iss*
+*.sol
+_build
+doxyxml
