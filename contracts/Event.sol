@@ -240,6 +240,7 @@ contract Event is ERC721 {
                     payableAmount -
                     ((payableAmount * commissionFee) / 100)
             );
+            ticketCountPerOwner[ticket._ticketOwner]--;
         } else {
             // no commission
             reseller.transfer(payableAmount);
@@ -364,10 +365,6 @@ contract Event is ERC721 {
         requiredEventStage(EventStage.SALES)
     {
         currentStage = EventStage.DURINGEVENT;
-        // transfer all tickets to their original owner
-        for (uint256 i = 0; i < numTickets; i++) {
-            safeTransferFrom(address(this), IDToTicket[i]._ticketOwner, i);
-        }
     }
 
     // during event --> post event
@@ -437,8 +434,8 @@ contract Event is ERC721 {
         return ticketCountPerOwner[countAddress];
     }
 
-    function getCurrentEventStage() public view returns (EventStage) {
-        return currentStage;
+    function getCurrentEventStage() public view returns (uint256) {
+        return uint256(currentStage);
     }
 
     function getEventContractAddress() public view returns (address) {

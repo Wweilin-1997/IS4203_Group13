@@ -62,10 +62,10 @@ contract MarketPlace is IERC721Receiver {
         );
 
         Event listedEvent = events[eventAddress];
-        if (listedEvent.getCurrentEventStage() == Event.EventStage.SALES) {
+        if (listedEvent.getCurrentEventStage() == uint256(Event.EventStage.SALES)) {
             listedEvent.buyTicketsDuringSales{value: msg.value}(tokenId);
         } else if (
-            listedEvent.getCurrentEventStage() == Event.EventStage.POSTEVENT
+            listedEvent.getCurrentEventStage() == uint256(Event.EventStage.POSTEVENT)
         ) {
             listedEvent.buyTicketsDuringPostEvent{value: msg.value}(tokenId);
         }
@@ -120,5 +120,25 @@ contract MarketPlace is IERC721Receiver {
         returns (uint256)
     {
         return points[accountAddress];
+    }
+
+    function retrieveTicket(address eventAddress, uint256 tokenId) public {
+        Event listedEvent = events[eventAddress];
+
+        require(
+            msg.sender == listedEvent.getTicket(tokenId)._ticketOwner,
+            "You're not the owner"
+        );
+        require(
+            listedEvent.getCurrentEventStage() == 2 ||
+                listedEvent.getCurrentEventStage() == 3,
+            "You're not allowed to perform this action at this point"
+        );
+
+        listedEvent.safeTransferFrom(
+            address(this),
+            listedEvent.getTicket(tokenId)._ticketOwner,
+            tokenId
+        );
     }
 }

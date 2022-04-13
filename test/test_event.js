@@ -249,13 +249,39 @@ contract("Event", function (accounts) {
     assert.strictEqual(ticketOwner, accounts[3], "Failed purchase ticket");
   });
 
-  /*
-    it('Change State to DURING', async () => {
-        await eventInstance.changeStateToDuring({ from: accounts[0] });
-    });
+  it("Change State to DURING", async () => {
+    // change state to DURING first
+    //await marketplaceInstance.retrieveTicket(); // specify tokenID
+     await eventInstance.changeStateToDuring({ from: accounts[0] });
+     let state = await eventInstance.getCurrentEventStage();
+     //console.log(state.toNumber());
+     assert.strictEqual(
+       state.toNumber(),
+       2,
+       "failed to change state to during"
+    );
+  });
 
-    it('Change State to POSTEVENt', async () => {
-        await eventInstance.changeStateToPostEvent({ from: accounts[0] });
-    });
-    */
+  it('Change State to POSTEVENT', async () => {
+    await eventInstance.changeStateToPostEvent({ from: accounts[0] });
+    let state = await eventInstance.getCurrentEventStage();
+    assert.strictEqual(
+      state.toNumber(),
+      3,
+      "failed to change state to post"
+   );
+  });
+
+  it('Trasfer the ownership of the ticket back to ticket owner', async () => {
+    let eventAddress0 = await eventInstance.getEventContractAddress();
+    let transferOwnership = await marketplaceInstance.retrieveTicket(eventAddress0, 4, {from: accounts[3]});
+    let newOwner = await eventInstance.ownerOf(4, {from: accounts[3]});
+    console.log(newOwner);
+    assert.strictEqual(
+      newOwner,
+      accounts[3],
+      "failed to transfer ownership"
+    );
+  });
+
 });
