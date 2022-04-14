@@ -221,7 +221,7 @@ contract("Event", function (accounts) {
 
   it("Listing Ticket", async () => {
     let eventAddress0 = await eventInstance.getEventContractAddress();
-    let listEvent = await eventInstance.listTicket(2, 50000000000000000n);
+    let listEvent = await eventInstance.listTicket(2, 52500000000000000n);
 
     let ticketAfterListing = await eventInstance.getTicket(2);
     let TicketisListed = ticketAfterListing.isListed;

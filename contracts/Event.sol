@@ -271,7 +271,7 @@ contract Event is ERC721 {
 
         require(
             _newListingPrice <=
-                (creationPrice * ((resaleCeiling + 100) / 100)) + commissionFee,
+                (creationPrice * (resaleCeiling + 100) / 100) * (commissionFee + 100) / 100,
             "Resale price cannot be greater than ceiling"
         );
 
