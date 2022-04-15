@@ -102,7 +102,6 @@ contract Event is ERC721 {
         uint256 _resaleCeiling,
         uint256 _maxTicketsPerAddress,
         uint256 _commissionFee,
-        //uint256 _eventDate,
         MarketPlace _marketPlace
     ) ERC721(_eventName, _symbol) {
         eventName = _eventName;
@@ -113,7 +112,6 @@ contract Event is ERC721 {
         resaleCeiling = _resaleCeiling;
         maxTicketsPerAddress = _maxTicketsPerAddress;
         commissionFee = _commissionFee;
-        //eventDate = _eventDate;
         currentStage = EventStage.PRESALES;
         marketPlace = _marketPlace;
     }

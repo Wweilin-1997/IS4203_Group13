@@ -21,13 +21,6 @@ contract MarketPlace is IERC721Receiver {
 
     address _owner = msg.sender;
 
-    /*
-  constructor(uint256 _commissonFee, Event _eventContract) {
-    commissonFee = _commissonFee;
-    eventContract = _eventContract;
-  }
-  */
-
     //mapping method
     constructor() {}
 
@@ -35,11 +28,6 @@ contract MarketPlace is IERC721Receiver {
     event newTicketListed(uint256 tokenId, uint256 price);
 
     function addEvent(address eventContractAddress) public {
-        // require(
-        //     address(events[eventContractAddress]) == address(0),
-        //     "There is an existing event with the same name"
-        // );
-
         events[eventContractAddress] = Event(msg.sender);
         eventAddresses.push(msg.sender);
         emit eventAdded(eventContractAddress);

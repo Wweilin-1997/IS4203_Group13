@@ -14,7 +14,6 @@ contract("Event", function (accounts) {
   });
 
   /**Testing Event */
-
   console.log("Testing Event Contract");
 
   it("Create Event - Event contract deployed and Event Organizer attribute is set to deployer address", async () => {
@@ -27,13 +26,8 @@ contract("Event", function (accounts) {
   });
 
   it("Add Event to Marketplace", async () => {
-    //let eventAddress0 = await eventInstance.getEventContractAddress();
-    //console.log(eventAddress0);
     await eventInstance.addEventToMarketplace();
-
     let event = await marketplaceInstance.getEvent(eventInstance.address);
-    // console.log("event instance: " + eventInstance.address);
-    // console.log("event: " + event);
     assert.strictEqual(
       event,
       eventInstance.address,
@@ -71,12 +65,8 @@ contract("Event", function (accounts) {
       { from: accounts[0] }
     );
 
-    // let listedPrice = await marketplaceInstance.getTicketPrice(eventInstance, 2);
-    // console.log(listedPrice);
-
     let typeToTicketIdsForEvent0 =
       await eventInstance.getTicketsListForEventType(eventType);
-    // console.log(typeToTicketIdsForEvent0)
 
     truffleAssert.eventEmitted(ticketsForEvent0, "ticketCreated");
 
@@ -85,10 +75,6 @@ contract("Event", function (accounts) {
       typeToTicketIdsForEvent0.length,
       "Failed to create correct number of tickets"
     );
-  });
-
-  it("Transferring tickets from one user to another", async () => {
-    // let transferTicket = await eventInstance.tra
   });
 
   it("Invalidate ticket", async () => {
@@ -177,16 +163,12 @@ contract("Event", function (accounts) {
   /**Marketplace Event */
   it("Purchase tickets during initial sales", async () => {
     let eventAddress0 = await eventInstance.getEventContractAddress();
-
-    //console.log(eventAddress0);
     let purcahse = await marketplaceInstance.buy(eventAddress0, 2, {
       from: accounts[2],
       value: Number(BigInt(5250000000000000000)),
     });
     let ticket = await eventInstance.getTicket(2);
     let ticketOwner = ticket._ticketOwner;
-    let ticketCount = await eventInstance.getCurrentTicketCount(ticketOwner);
-    //truffleAssert.eventEmitted(purcahse, "ticketBoughtDuringSales");
     assert.strictEqual(
       ticketOwner,
       accounts[2],
@@ -232,29 +214,24 @@ contract("Event", function (accounts) {
   it("upgrade account", async () => {
     let upgrade = await marketplaceInstance.upgradeAccountToGold(accounts[3]);
     let points = await marketplaceInstance.getAccountPoints(accounts[3]);
-    //console.log(points.toNumber());
     assert.strictEqual(points.toNumber(), 1501, "Failed to upgrade account");
   });
 
   it("Purchase tickets with gold account", async () => {
     let eventAddress0 = await eventInstance.getEventContractAddress();
-    //console.log(eventAddress0);
     let purcahse = await marketplaceInstance.buy(eventAddress0, 4, {
       from: accounts[3],
       value: Number(BigInt(5050000000000000000)),
     });
     let ticket = await eventInstance.getTicket(4);
     let ticketOwner = ticket._ticketOwner;
-    //truffleAssert.eventEmitted(purcahse, "ticketBoughtDuringSales");
     assert.strictEqual(ticketOwner, accounts[3], "Failed purchase ticket");
   });
 
   it("Change State to DURING", async () => {
     // change state to DURING first
-    //await marketplaceInstance.retrieveTicket(); // specify tokenID
      await eventInstance.changeStateToDuring({ from: accounts[0] });
      let state = await eventInstance.getCurrentEventStage();
-     //console.log(state.toNumber());
      assert.strictEqual(
        state.toNumber(),
        2,
